@@ -1,114 +1,232 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, Component, ElementRef,
-  OnDestroy, effect, inject, viewChild
+  OnDestroy, effect, inject, signal, viewChild
 } from '@angular/core';
+import OlMap from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import XYZ from 'ol/source/XYZ';
+import VectorSource from 'ol/source/Vector';
+import Feature from 'ol/Feature';
+import { Circle as CircleGeom } from 'ol/geom';
+import Overlay from 'ol/Overlay';
+import { fromLonLat } from 'ol/proj';
+import { boundingExtent } from 'ol/extent';
+import { defaults as defaultControls } from 'ol/control';
+import { Fill, Stroke, Style } from 'ol/style';
+import { easeOut } from 'ol/easing';
+import type { Coordinate } from 'ol/coordinate';
+
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { HIGHLIGHT_ZONES } from '../../core/data/mock-data';
 import { PersonReport, ReliefCenter } from '../../core/models/models';
 import { SOURCE_LABEL, STATUS_LABEL } from '../../core/util/labels';
 
-// Leaflet is loaded from CDN (see index.html) and exposed as global `L`.
-declare const L: any;
+interface MarkerEntry {
+  overlay: Overlay;
+  coord: Coordinate;
+  html: string;
+}
 
 @Component({
   selector: 'app-crisis-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #mapEl class="absolute inset-0 z-0"></div>`
+  template: `
+    <div #mapEl class="absolute inset-0 z-0"></div>
+    @if (mapError()) {
+      <div class="absolute inset-0 z-[1] grid place-items-center bg-ink-900 p-6 text-center">
+        <div>
+          <div class="text-lg font-bold text-alert">⚠️ Mapa no disponible</div>
+          <div class="mx-auto mt-2 max-w-sm break-words text-xs text-slate-400">{{ mapError() }}</div>
+        </div>
+      </div>
+    }
+  `,
+  styles: [`:host { position: absolute; inset: 0; display: block; }`]
 })
 export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private data = inject(CrisisDataService);
   private ui = inject(UiService);
   private mapEl = viewChild.required<ElementRef<HTMLDivElement>>('mapEl');
 
-  private map: any;
-  private peopleLayer: any;
-  private centersLayer: any;
-  private markersById = new Map<string, any>();
+  private map?: OlMap;
+  private zonesLayer?: VectorLayer<VectorSource>;
+  private markerOverlays: Overlay[] = [];
+  private markersById = new Map<string, MarkerEntry>();
+  private popupEl?: HTMLDivElement;
+  private popupCloser?: HTMLButtonElement;
+  private popupOverlay?: Overlay;
+  readonly mapError = signal<string | null>(null);
 
   constructor() {
-    // Rebuild markers whenever the data changes.
     effect(() => {
       const people = this.data.people();
       const centers = this.data.centers();
       if (this.map) this.renderMarkers(people, centers);
     });
 
-    // React to focus requests (tap on a result / metric).
     effect(() => {
       const f = this.ui.focus();
       if (f && this.map) {
-        this.map.flyTo([f.lat, f.lng], f.zoom ?? 15, { duration: 0.8 });
+        this.flyTo(f.lat, f.lng, f.zoom ?? 15);
         if (f.id) {
-          const m = this.markersById.get(f.id);
-          if (m) setTimeout(() => m.openPopup(), 650);
+          setTimeout(() => {
+            const entry = this.markersById.get(f.id!);
+            if (entry) this.openPopup(entry.html, entry.coord);
+          }, 650);
         }
       }
     });
   }
 
   ngAfterViewInit(): void {
-    this.map = L.map(this.mapEl().nativeElement, {
-      zoomControl: true,
-      attributionControl: true,
-      preferCanvas: true
-    });
+    try {
+      const cartoSource = new XYZ({
+        url: 'https://{a-d}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        attributions: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19
+      });
+      const osmSource = new XYZ({
+        url: 'https://{a-d}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attributions: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      });
 
-    // Dark base layer (CartoDB DarkMatter).
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(this.map);
+      const baseLayer = new TileLayer({ source: cartoSource });
+      let swappedToOsm = false;
+      cartoSource.on('tileloaderror', () => {
+        if (!swappedToOsm) {
+          swappedToOsm = true;
+          console.warn('[OmniRed] CARTO no responde; cambiando a teselas de OpenStreetMap.');
+          baseLayer.setSource(osmSource);
+        }
+      });
 
-    this.peopleLayer = L.layerGroup().addTo(this.map);
-    this.centersLayer = L.layerGroup().addTo(this.map);
+      this.zonesLayer = new VectorLayer({
+        source: new VectorSource(),
+        style: (feature) => {
+          if (feature.get('kind') === 'label') return undefined;
+          return new Style({
+            stroke: new Stroke({ color: 'rgba(249,115,22,0.8)', width: 1.5, lineDash: [6, 6] }),
+            fill: new Fill({ color: 'rgba(249,115,22,0.06)' })
+          });
+        }
+      });
 
-    this.drawHighlightZones();
-    this.frameVenezuela();
+      this.map = new OlMap({
+        target: this.mapEl().nativeElement,
+        layers: [baseLayer, this.zonesLayer],
+        view: new View({
+          center: fromLonLat([-66.9036, 10.4806]),
+          zoom: 8,
+          maxZoom: 19
+        }),
+        controls: defaultControls({ attribution: true, zoom: true })
+      });
 
-    this.renderMarkers(this.data.people(), this.data.centers());
-  }
+      this.initPopup();
+      this.drawHighlightZones();
+      this.frameVenezuela();
+      this.renderMarkers(this.data.people(), this.data.centers());
 
-  ngOnDestroy(): void {
-    this.map?.remove();
-  }
-
-  // --- Initial framing: Venezuela north-central, the 3 zones visible --------
-  private frameVenezuela(): void {
-    const bounds = L.latLngBounds(HIGHLIGHT_ZONES.map((z) => [z.lat, z.lng]));
-    this.map.fitBounds(bounds.pad(0.6), { maxZoom: 9 });
-  }
-
-  // --- Highlight Caracas / La Guaira / Carabobo -----------------------------
-  private drawHighlightZones(): void {
-    for (const z of HIGHLIGHT_ZONES) {
-      L.circle([z.lat, z.lng], {
-        radius: z.radiusKm * 1000,
-        color: '#f97316',          // warn/orange outline = focus area
-        weight: 1.5,
-        opacity: 0.8,
-        dashArray: '6 6',
-        fillColor: '#f97316',
-        fillOpacity: 0.06
-      }).addTo(this.map);
-
-      L.marker([z.lat, z.lng], {
-        interactive: false,
-        icon: L.divIcon({
-          className: '',
-          html: `<span class="omni-zona-label">📍 ${this.esc(z.name)}</span>`,
-          iconSize: [0, 0]
-        })
-      }).addTo(this.map);
+      setTimeout(() => this.map?.updateSize(), 0);
+      setTimeout(() => this.map?.updateSize(), 350);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[OmniRed] No se pudo inicializar el mapa:', e);
+      this.mapError.set(msg);
     }
   }
 
-  // --- Markers --------------------------------------------------------------
+  ngOnDestroy(): void {
+    this.map?.setTarget(undefined);
+    this.map?.dispose();
+  }
+
+  private initPopup(): void {
+    this.popupEl = document.createElement('div');
+    this.popupEl.className = 'omni-ol-popup';
+
+    this.popupCloser = document.createElement('button');
+    this.popupCloser.className = 'omni-ol-popup-closer';
+    this.popupCloser.type = 'button';
+    this.popupCloser.setAttribute('aria-label', 'Cerrar');
+    this.popupCloser.innerHTML = '&times;';
+    this.popupCloser.addEventListener('click', () => this.closePopup());
+
+    const content = document.createElement('div');
+    content.className = 'omni-ol-popup-content';
+    this.popupEl.appendChild(this.popupCloser);
+    this.popupEl.appendChild(content);
+
+    this.popupOverlay = new Overlay({
+      element: this.popupEl,
+      autoPan: { animation: { duration: 250 } },
+      positioning: 'bottom-center',
+      stopEvent: true,
+      offset: [0, -14]
+    });
+    this.map!.addOverlay(this.popupOverlay);
+
+    this.map!.on('click', (evt) => {
+      const hit = this.map!.forEachFeatureAtPixel(evt.pixel, () => true);
+      if (!hit) this.closePopup();
+    });
+  }
+
+  private flyTo(lat: number, lng: number, zoom: number): void {
+    const view = this.map!.getView();
+    view.animate({
+      center: fromLonLat([lng, lat]),
+      zoom,
+      duration: 800,
+      easing: easeOut
+    });
+  }
+
+  private frameVenezuela(): void {
+    try {
+      const coords = HIGHLIGHT_ZONES.map((z) => fromLonLat([z.lng, z.lat]));
+      const extent = boundingExtent(coords);
+      this.map!.getView().fit(extent, {
+        padding: [80, 80, 160, 80],
+        maxZoom: 9,
+        duration: 0
+      });
+    } catch (e) {
+      console.warn('[OmniRed] fitBounds falló; se mantiene la vista inicial:', e);
+    }
+  }
+
+  private drawHighlightZones(): void {
+    const source = this.zonesLayer!.getSource()!;
+    for (const z of HIGHLIGHT_ZONES) {
+      source.addFeature(new Feature({
+        geometry: new CircleGeom(fromLonLat([z.lng, z.lat]), z.radiusKm * 1000)
+      }));
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'omni-zona-label';
+      labelEl.textContent = `📍 ${z.name}`;
+      const labelOverlay = new Overlay({
+        element: labelEl,
+        position: fromLonLat([z.lng, z.lat]),
+        positioning: 'bottom-center',
+        stopEvent: false,
+        offset: [0, -8]
+      });
+      this.map!.addOverlay(labelOverlay);
+    }
+  }
+
   private renderMarkers(people: PersonReport[], centers: ReliefCenter[]): void {
-    this.peopleLayer.clearLayers();
-    this.centersLayer.clearLayers();
+    for (const ov of this.markerOverlays) {
+      this.map!.removeOverlay(ov);
+    }
+    this.markerOverlays = [];
     this.markersById.clear();
 
     for (const p of people) {
@@ -116,23 +234,49 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       const cls = isMissing
         ? 'omni-pin omni-pin--alert omni-pin--pulse'
         : p.estado === 'a_salvo' ? 'omni-pin omni-pin--safe' : 'omni-pin';
-      const marker = L.marker([p.lat, p.lng], {
-        icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
-      }).bindPopup(this.personPopup(p), { maxWidth: 280 });
-      marker.addTo(this.peopleLayer);
-      this.markersById.set(p.id, marker);
+      const coord = fromLonLat([p.lng, p.lat]);
+      const html = this.personPopup(p);
+      this.addMarker(p.id, coord, cls, html);
     }
 
     for (const c of centers) {
-      const marker = L.marker([c.lat, c.lng], {
-        icon: L.divIcon({ className: '', html: `<div class="omni-pin omni-pin--info"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
-      }).bindPopup(this.centerPopup(c), { maxWidth: 280 });
-      marker.addTo(this.centersLayer);
-      this.markersById.set(c.id, marker);
+      const coord = fromLonLat([c.lng, c.lat]);
+      const html = this.centerPopup(c);
+      this.addMarker(c.id, coord, 'omni-pin omni-pin--info', html);
     }
   }
 
-  // --- Popups (content escaped: defends against XSS in live data) -----------
+  private addMarker(id: string, coord: Coordinate, pinClass: string, html: string): void {
+    const el = document.createElement('div');
+    el.className = pinClass;
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      this.openPopup(html, coord);
+    });
+
+    const overlay = new Overlay({
+      element: el,
+      position: coord,
+      positioning: 'center-center',
+      stopEvent: false
+    });
+
+    this.map!.addOverlay(overlay);
+    this.markerOverlays.push(overlay);
+    this.markersById.set(id, { overlay, coord, html });
+  }
+
+  private openPopup(html: string, coord: Coordinate): void {
+    const content = this.popupEl!.querySelector('.omni-ol-popup-content') as HTMLDivElement;
+    content.innerHTML = html;
+    this.popupOverlay!.setPosition(coord);
+  }
+
+  private closePopup(): void {
+    this.popupOverlay?.setPosition(undefined);
+  }
+
   private personPopup(p: PersonReport): string {
     const dot = p.estado === 'a_salvo' ? '#22c55e' : p.estado === 'desaparecido' ? '#ef4444' : '#94a3b8';
     return `
@@ -171,7 +315,6 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     return d.toLocaleString('es-VE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   }
 
-  /** Minimal HTML escaping for values injected into popup markup. */
   private esc(s: string): string {
     const map: Record<string, string> = {
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

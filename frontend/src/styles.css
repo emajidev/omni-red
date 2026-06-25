@@ -1,7 +1,7 @@
 /* =============================================================================
    OmniRed · estilos globales
    Tailwind se carga por CDN (ver index.html). Aquí solo va lo que Tailwind no
-   cubre: tema oscuro de Leaflet, pines personalizados, scrollbars y utilidades.
+   cubre: tema oscuro de OpenLayers, pines personalizados, scrollbars y utilidades.
    ============================================================================= */
 
 html, body { height: 100%; margin: 0; }
@@ -13,31 +13,68 @@ html, body { height: 100%; margin: 0; }
 *::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------------------------------------------------------------------------
-   Mapa Leaflet
+   Mapa OpenLayers
 --------------------------------------------------------------------------- */
-.leaflet-container {
+.ol-viewport,
+.ol-viewport canvas {
   background: #0b0f14;
   font-family: inherit;
 }
-/* Popups en modo oscuro */
-.leaflet-popup-content-wrapper {
+.ol-control button {
+  background: #121821;
+  color: #e2e8f0;
+  border-color: #27313f;
+}
+.ol-control button:hover,
+.ol-control button:focus {
+  background: #1b2430;
+  color: #e2e8f0;
+}
+.ol-attribution {
+  background: rgba(11, 15, 20, 0.7) !important;
+  color: #64748b !important;
+}
+.ol-attribution ul { font-size: 10px; }
+.ol-attribution a { color: #94a3b8 !important; }
+
+/* Popup flotante del mapa */
+.omni-ol-popup {
+  position: relative;
   background: #121821;
   color: #e2e8f0;
   border: 1px solid #27313f;
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  min-width: 200px;
+  max-width: 280px;
 }
-.leaflet-popup-tip { background: #121821; border: 1px solid #27313f; }
-.leaflet-popup-content { margin: 12px 14px; line-height: 1.4; }
-.leaflet-container a.leaflet-popup-close-button { color: #94a3b8; }
-.leaflet-control-zoom a {
-  background: #121821; color: #e2e8f0; border-color: #27313f;
+.omni-ol-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #121821;
+  filter: drop-shadow(0 1px 0 #27313f);
 }
-.leaflet-control-zoom a:hover { background: #1b2430; }
-.leaflet-control-attribution {
-  background: rgba(11,15,20,.7) !important; color: #64748b !important;
+.omni-ol-popup-content {
+  margin: 12px 14px;
+  line-height: 1.4;
 }
-.leaflet-control-attribution a { color: #94a3b8 !important; }
+.omni-ol-popup-closer {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.omni-ol-popup-closer:hover { color: #e2e8f0; }
 
 /* ---------------------------------------------------------------------------
    Pines personalizados (DivIcon)

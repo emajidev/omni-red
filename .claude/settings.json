@@ -8,7 +8,13 @@
       "Bash(wsl.exe -e bash -lc 'tail -5 /tmp/omni_install.log 2>/dev/null; echo \"---exit marker---\"; grep -c \"added\" /tmp/omni_install.log 2>/dev/null; ls /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng >/dev/null 2>&1 && echo \"ng available\" || echo \"ng not yet\"')",
       "Bash(wsl.exe -e bash -lc 'tail -6 /tmp/omni_install.log 2>/dev/null; echo \"---\"; ls /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng >/dev/null 2>&1 && echo \"ng available\" || echo \"ng not yet\"')",
       "Bash(wsl.exe -e bash -lc ' *)",
-      "Bash(wsl.exe -e bash -lc 'test -x /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng && echo \"DEPS_OK\" || echo \"DEPS_PENDIENTE\"; echo \"--- build ---\"; tail -6 /tmp/omni_build.log 2>/dev/null || echo \"\\(build aún no inicia\\)\"')"
+      "Bash(wsl.exe -e bash -lc 'test -x /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng && echo \"DEPS_OK\" || echo \"DEPS_PENDIENTE\"; echo \"--- build ---\"; tail -6 /tmp/omni_build.log 2>/dev/null || echo \"\\(build aún no inicia\\)\"')",
+      "Bash(wsl.exe -e bash -lc 'echo \"pnpm: $\\(pnpm -v 2>/dev/null || echo NO\\)\"; echo \"node: $\\(node -v\\)\"; echo \"--- frontend dir ---\"; ls -la /home/ema/personal-repos/omni-red/frontend 2>/dev/null || echo \"\\(no existe frontend aún\\)\"; echo \"--- backend dir ---\"; ls -R /home/ema/personal-repos/omni-red/backend 2>/dev/null')",
+      "Bash(wsl.exe -e bash -lc 'cd /home/ema/personal-repos/omni-red/frontend; echo \"=== tree src ===\"; find src -type f | sort; echo; echo \"=== package.json ===\"; cat package.json; echo; echo \"=== angular.json ===\"; cat angular.json')",
+      "Bash(wsl.exe -e bash -lc 'corepack enable 2>&1; corepack prepare pnpm@9.15.0 --activate 2>&1; echo \"---\"; echo \"pnpm: $\\(pnpm -v 2>/dev/null || echo STILL-NO\\)\"')",
+      "Bash(wsl.exe -e bash -lc 'echo \"which node: $\\(which node\\)\"; echo \"npm prefix: $\\(npm config get prefix\\)\"; echo \"--- intentando instalar pnpm global ---\"; npm install -g pnpm@9 2>&1 | tail -8; echo \"---\"; export PATH=\"$\\(npm config get prefix\\)/bin:$PATH\"; echo \"pnpm: $\\(pnpm -v 2>/dev/null || echo STILL-NO\\)\"')",
+      "Bash(wsl.exe -e bash -lc 'npm config set prefix \"$HOME/.local\"; npm install -g pnpm@9 2>&1 | tail -5; export PATH=\"$HOME/.local/bin:$PATH\"; echo \"---\"; echo \"pnpm: $\\($HOME/.local/bin/pnpm -v 2>/dev/null || echo STILL-NO\\)\"')",
+      "Bash(wsl.exe -e bash -lc 'export PATH=\"$HOME/.local/bin:$PATH\"; cd /home/ema/personal-repos/omni-red/frontend; echo \"node $\\(node -v\\) / pnpm $\\(pnpm -v\\)\"; rm -rf node_modules package-lock.json 2>/dev/null; pnpm install 2>&1 | tail -25')"
     ]
   }
 }

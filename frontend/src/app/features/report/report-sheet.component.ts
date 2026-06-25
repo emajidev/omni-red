@@ -36,7 +36,7 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
     <app-bottom-sheet [title]="isSafe() ? 'Reportar persona a salvo' : 'Reportar desaparecido'"
                       subtitle="Los datos se validan también en el servidor"
                       [icon]="isSafe() ? '🟢' : '🚨'"
-                      [accentBg]="isSafe() ? 'bg-safe/20 text-safe' : 'bg-alert/20 text-alert'"
+                      [accentBg]="isSafe() ? 'bg-safebg text-safe' : 'bg-alertbg text-alert'"
                       (close)="ui.close()">
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
@@ -44,64 +44,68 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
         <!-- Status toggle -->
         <div class="grid grid-cols-2 gap-2">
           <button type="button" (click)="setStatus('desaparecido')"
-                  class="rounded-xl py-2.5 text-sm font-bold ring-1 transition"
-                  [class]="!isSafe() ? 'bg-alert text-white ring-alert' : 'bg-ink-700 text-slate-300 ring-ink-600'">
+                  class="rounded-xl py-3 text-sm font-extrabold ring-1 shadow-sm transition"
+                  [class]="!isSafe() ? 'bg-alert text-white ring-alert' : 'bg-appbg text-textmuted ring-borderlight hover:bg-borderlight/50'">
             🚨 Desaparecido
           </button>
           <button type="button" (click)="setStatus('a_salvo')"
-                  class="rounded-xl py-2.5 text-sm font-bold ring-1 transition"
-                  [class]="isSafe() ? 'bg-safe text-white ring-safe' : 'bg-ink-700 text-slate-300 ring-ink-600'">
+                  class="rounded-xl py-3 text-sm font-extrabold ring-1 shadow-sm transition"
+                  [class]="isSafe() ? 'bg-safe text-white ring-safe' : 'bg-appbg text-textmuted ring-borderlight hover:bg-borderlight/50'">
             🟢 A salvo
           </button>
         </div>
 
         <!-- Name -->
         <label class="block">
-          <span class="text-xs font-medium text-slate-400">Nombre completo *</span>
+          <span class="text-xs font-semibold text-textmuted ml-1">Nombre completo *</span>
           <input formControlName="nombre" type="text" autocomplete="off"
-                 class="mt-1 w-full rounded-xl bg-ink-700 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-ink-600 outline-none focus:ring-info" />
-          @if (invalid('nombre')) { <span class="text-[11px] text-alert">Indica un nombre (mínimo 3 caracteres).</span> }
+                 class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
+          @if (invalid('nombre')) { <span class="text-[11px] font-semibold text-alert ml-1 mt-1 block">Indica un nombre (mínimo 3 caracteres).</span> }
         </label>
 
         <!-- Cédula + edad -->
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-3">
           <label class="block">
-            <span class="text-xs font-medium text-slate-400">Cédula</span>
+            <span class="text-xs font-semibold text-textmuted ml-1">Cédula</span>
             <input formControlName="cedula" type="text" placeholder="V-12.345.678"
-                   class="mt-1 w-full rounded-xl bg-ink-700 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-ink-600 outline-none focus:ring-info" />
-            @if (invalid('cedula')) { <span class="text-[11px] text-alert">Formato no válido.</span> }
+                   class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info placeholder:text-textmuted transition" />
+            @if (invalid('cedula')) { <span class="text-[11px] font-semibold text-alert ml-1 mt-1 block">Formato no válido.</span> }
           </label>
           <label class="block">
-            <span class="text-xs font-medium text-slate-400">Edad</span>
+            <span class="text-xs font-semibold text-textmuted ml-1">Edad</span>
             <input formControlName="edad" type="number" min="0" max="120"
-                   class="mt-1 w-full rounded-xl bg-ink-700 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-ink-600 outline-none focus:ring-info" />
+                   class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
           </label>
         </div>
 
         <!-- Location -->
         <label class="block">
-          <span class="text-xs font-medium text-slate-400">Última ubicación conocida *</span>
-          <select formControlName="place"
-                  class="mt-1 w-full rounded-xl bg-ink-700 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-ink-600 outline-none focus:ring-info">
-            @for (pl of places; track pl.name) { <option [value]="pl.name">{{ pl.name }}</option> }
-          </select>
+          <span class="text-xs font-semibold text-textmuted ml-1">Última ubicación conocida *</span>
+          <div class="flex gap-2">
+            <input formControlName="place" list="places-list" type="text" placeholder="Dirección o selecciona de la lista..."
+                   class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
+            <button type="button" (click)="useCurrentLocation()" class="mt-1.5 rounded-xl bg-appbg px-3 py-3 text-sm font-medium ring-1 ring-borderlight shadow-inner hover:bg-borderlight transition" title="Usar ubicación actual">📍</button>
+          </div>
+          <datalist id="places-list">
+            @for (pl of places; track pl.name) { <option [value]="pl.name"></option> }
+          </datalist>
         </label>
 
         <!-- Detail -->
         <label class="block">
-          <span class="text-xs font-medium text-slate-400">Detalle / señas</span>
+          <span class="text-xs font-semibold text-textmuted ml-1">Detalle / señas</span>
           <textarea formControlName="detalle" rows="2" maxlength="500"
                     placeholder="Ropa, condición médica, contexto…"
-                    class="mt-1 w-full resize-none rounded-xl bg-ink-700 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-ink-600 outline-none focus:ring-info"></textarea>
+                    class="mt-1.5 w-full resize-none rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info placeholder:text-textmuted transition"></textarea>
         </label>
 
         <button type="submit" [disabled]="form.invalid || saving()"
-                class="w-full rounded-xl py-3 text-sm font-bold text-white transition active:scale-[.99] disabled:opacity-50"
-                [class]="isSafe() ? 'bg-safe hover:brightness-110' : 'bg-alert hover:brightness-110'">
+                class="w-full rounded-2xl py-3.5 mt-2 text-sm font-bold text-white shadow-md transition active:scale-[.98] disabled:opacity-50"
+                [class]="isSafe() ? 'bg-safe hover:bg-safe/90 shadow-safe/30' : 'bg-alert hover:bg-alert/90 shadow-alert/30'">
           {{ saving() ? 'Enviando…' : (isSafe() ? 'Registrar como a salvo' : 'Publicar desaparecido') }}
         </button>
 
-        <p class="text-center text-[11px] text-slate-500">
+        <p class="text-center text-[11px] font-medium text-textmuted">
           🔐 Enviado vía RPC <code>reportar_persona</code> (validación server-side + desduplicación).
         </p>
       </form>
@@ -139,19 +143,50 @@ export class ReportSheetComponent implements OnInit {
     return !!c && c.invalid && (c.dirty || c.touched);
   }
 
+  useCurrentLocation(): void {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lng = pos.coords.longitude.toFixed(5);
+        this.form.patchValue({ place: `${lat}, ${lng}` });
+      }, () => {
+        this.ui.toast('No se pudo obtener la ubicación. Permite el acceso.', 'alert');
+      });
+    } else {
+      this.ui.toast('Geolocalización no soportada', 'alert');
+    }
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
     try {
       const v = this.form.getRawValue();
-      const place = PLACES.find((p) => p.name === v.place) ?? PLACES[0];
+      
+      let lat = PLACES[0].lat + (Math.random() - 0.5) * 0.02;
+      let lng = PLACES[0].lng + (Math.random() - 0.5) * 0.02;
+      let ubicacionFinal = v.place;
+
+      const matchedPlace = PLACES.find((p) => p.name === v.place);
+      if (matchedPlace) {
+        lat = matchedPlace.lat + (Math.random() - 0.5) * 0.02;
+        lng = matchedPlace.lng + (Math.random() - 0.5) * 0.02;
+      } else {
+        const match = /^([-\d.]+),\s*([-\d.]+)$/.exec(v.place);
+        if (match) {
+          lat = parseFloat(match[1]);
+          lng = parseFloat(match[2]);
+          ubicacionFinal = 'Ubicación seleccionada (GPS)';
+        }
+      }
+
       const res = await this.data.reportPerson({
         nombre: v.nombre,
         cedula: v.cedula?.trim() ? v.cedula.trim() : null,
         estado: this.status(),
-        ubicacion: place.name,
-        lat: place.lat + (Math.random() - 0.5) * 0.02,
-        lng: place.lng + (Math.random() - 0.5) * 0.02,
+        ubicacion: ubicacionFinal,
+        lat: lat,
+        lng: lng,
         fuente: 'web',
         edad: v.edad ?? null,
         detalle: v.detalle?.trim() || null,

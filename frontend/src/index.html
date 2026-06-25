@@ -3,9 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <title>OmniRed · Respuesta a Crisis</title>
+  <script>
+    function showBanner(text) {
+      // Remove any existing banner
+      var existing = document.querySelector('.error-banner');
+      if (existing) existing.remove();
+      
+      var div = document.createElement('div');
+      div.className = 'error-banner';
+      div.style.position = 'fixed';
+      div.style.top = '10px';
+      div.style.left = '10px';
+      div.style.right = '10px';
+      div.style.background = '#e53e3e';
+      div.style.color = 'white';
+      div.style.padding = '15px';
+      div.style.zIndex = '99999';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '12px';
+      div.style.borderRadius = '8px';
+      div.style.wordBreak = 'break-all';
+      div.innerText = text;
+      document.documentElement.appendChild(div);
+    }
+
+    window.addEventListener('error', function(e) {
+      showBanner('Runtime Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno);
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+      showBanner('Unhandled Rejection: ' + e.reason);
+    });
+
+    var origConsoleError = console.error;
+    console.error = function() {
+      origConsoleError.apply(console, arguments);
+      var msg = Array.prototype.slice.call(arguments).map(function(arg) {
+        if (arg instanceof Error) return arg.message + '\n' + arg.stack;
+        if (typeof arg === 'object') {
+          try { return JSON.stringify(arg); } catch(e) { return String(arg); }
+        }
+        return String(arg);
+      }).join(' ');
+      showBanner('Console Error: ' + msg);
+    };
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0f14" />
-  <meta name="description" content="OmniRed: centralización de reportes de personas, acopio y sismos tras el sismo en Venezuela." />
+  <meta name="theme-color" content="#F7FAFC" />
+  <meta name="description" content="LocalizaVZLA: centralización de reportes de personas, acopio y sismos." />
 
   <!--
     🔐 Content-Security-Policy (defensa en profundidad).
@@ -15,13 +60,16 @@
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
     style-src 'self' 'unsafe-inline' https://unpkg.com;
     img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org;
     font-src 'self' data:;
     connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org ws: http://localhost:* http://0.0.0.0:*;
     worker-src 'self' blob:;
   " />
+
+  <!-- GSAP Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
   <!-- Leaflet (mapa interactivo real) -->
   <link rel="stylesheet"
@@ -32,7 +80,7 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
 
-  <!-- Tailwind CSS (CDN de desarrollo). En producción: compilar con PostCSS. -->
+  <!-- Tailwind CSS (CDN de desarrollo) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -40,16 +88,35 @@
       theme: {
         extend: {
           colors: {
-            // Lienzo / superficies (alto contraste, modo oscuro)
-            ink:    { 900: '#0b0f14', 800: '#121821', 700: '#1b2430', 600: '#27313f' },
-            // Semántica de alerta
-            alert:  '#ef4444', // 🔴 desaparecido / urgente
-            warn:   '#f97316', // 🟠 acentos / atención
-            safe:   '#22c55e', // 🟢 a salvo
-            info:   '#3b82f6'  // 🔵 acopio / servicios
+            // Light Premium Theme Backgrounds
+            appbg: '#EAF0F4',
+            surface: '#FFFFFF',
+            borderlight: '#EDF2F7',
+            textmain: '#1A202C',
+            textmuted: '#718096',
+            
+            // Pastel & Premium Semantics
+            alert:  '#E53E3E', // Darker red for text/icons
+            alertbg: '#FED7D7', // Pastel red
+            warn:   '#D69E2E', // Darker orange/yellow
+            warnbg: '#FEFCBF', // Pastel yellow
+            safe:   '#38A169', // Darker green
+            safebg: '#C6F6D5', // Pastel green
+            info:   '#2B6CB0', // Darker blue
+            infobg: '#BEE3F8', // Pastel blue
+            primary: '#1A202C' // Dark primary
           },
           fontFamily: {
-            sans: ['ui-sans-serif', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif']
+            sans: ['Inter', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif']
+          },
+          boxShadow: {
+            'card': '0 4px 6px rgba(0,0,0,0.05), 0 10px 25px rgba(0,0,0,0.03)',
+            'sheet': '0 -10px 40px rgba(0,0,0,0.08)'
+          },
+          borderRadius: {
+            'xl': '1rem',
+            '2xl': '1.5rem',
+            '3xl': '2rem'
           },
           keyframes: {
             'count-pop': { '0%': { transform: 'scale(.8)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
@@ -63,14 +130,15 @@
       }
     };
   </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-ink-900 text-slate-100 antialiased overflow-hidden">
+<body class="bg-appbg text-textmain font-sans antialiased overflow-hidden">
   <app-root>
     <!-- Splash mientras Angular arranca -->
-    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0f14;color:#ef4444;font-family:system-ui;">
+    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#EAF0F4;color:#1A202C;font-family:'Inter',system-ui;">
       <div style="text-align:center">
-        <div style="font-size:2rem;font-weight:800;letter-spacing:.05em">🔴 OmniRed</div>
-        <div style="color:#64748b;margin-top:.5rem">Cargando plataforma…</div>
+        <div style="font-size:2rem;font-weight:800;letter-spacing:-.05em">LocalizaVZLA</div>
+        <div style="color:#718096;margin-top:.5rem">Cargando plataforma premium…</div>
       </div>
     </div>
   </app-root>

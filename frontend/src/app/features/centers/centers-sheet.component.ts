@@ -12,57 +12,59 @@ import { CAPACITY_CHIP, CAPACITY_LABEL, timeAgo } from '../../core/util/labels';
   imports: [BottomSheetComponent],
   template: `
     <app-bottom-sheet title="Acopio y sismos" subtitle="Centros activos y últimas réplicas"
-                      icon="📦" accentBg="bg-info/20 text-info" (close)="ui.close()">
+                      icon="📦" accentBg="bg-infobg text-info" (close)="ui.close()">
 
       <!-- Tabs -->
-      <div class="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-ink-700 p-1">
+      <div class="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-appbg p-1.5 shadow-inner ring-1 ring-borderlight">
         <button (click)="tab.set('centers')"
-                class="rounded-lg py-2 text-sm font-semibold transition"
-                [class]="tab()==='centers' ? 'bg-info text-white' : 'text-slate-300'">
+                class="rounded-xl py-2.5 text-sm font-bold transition shadow-sm"
+                [class]="tab()==='centers' ? 'bg-surface text-info ring-1 ring-borderlight' : 'text-textmuted hover:bg-borderlight/50'">
           📦 Centros ({{ data.centers().length }})
         </button>
         <button (click)="tab.set('quakes')"
-                class="rounded-lg py-2 text-sm font-semibold transition"
-                [class]="tab()==='quakes' ? 'bg-alert text-white' : 'text-slate-300'">
+                class="rounded-xl py-2.5 text-sm font-bold transition shadow-sm"
+                [class]="tab()==='quakes' ? 'bg-surface text-alert ring-1 ring-borderlight' : 'text-textmuted hover:bg-borderlight/50'">
           🌐 Sismos ({{ data.quakes().length }})
         </button>
       </div>
 
       @if (tab() === 'centers') {
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           @for (c of data.centers(); track c.id) {
             <button (click)="focus(c)"
-                    class="rounded-xl bg-ink-700/50 p-3 text-left ring-1 ring-ink-600 hover:bg-ink-700 active:scale-[.99] transition fade-in">
-              <div class="flex items-start justify-between gap-2">
-                <span class="text-sm font-semibold text-slate-100">{{ c.nombre }}</span>
-                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="cap(c.capacidad)">{{ capLabel(c.capacidad) }}</span>
+                    class="rounded-2xl bg-surface p-4 text-left shadow-sm ring-1 ring-borderlight hover:bg-appbg/80 active:scale-[.99] transition fade-in">
+              <div class="flex items-start justify-between gap-3">
+                <span class="text-sm font-extrabold text-textmain">{{ c.nombre }}</span>
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm" [class]="cap(c.capacidad)">{{ capLabel(c.capacidad) }}</span>
               </div>
-              <div class="mt-0.5 text-xs text-slate-400">📍 {{ c.ubicacion }}</div>
-              <div class="mt-2 flex flex-wrap gap-1">
+              <div class="mt-1 text-[13px] font-medium text-textmuted">📍 {{ c.ubicacion }}</div>
+              <div class="mt-3 flex flex-wrap gap-1.5">
                 @for (s of c.insumos_solicitados; track s) {
-                  <span class="rounded-md bg-ink-600 px-1.5 py-0.5 text-[10px] text-slate-200">{{ s }}</span>
+                  <span class="rounded-lg bg-borderlight px-2 py-1 text-[10px] font-bold text-textmain">{{ s }}</span>
                 } @empty {
-                  <span class="text-[10px] text-slate-500">Sin solicitudes activas</span>
+                  <span class="text-[11px] font-medium text-textmuted">Sin solicitudes activas</span>
                 }
               </div>
             </button>
           }
         </div>
       } @else {
-        <ol class="relative space-y-3 border-l border-ink-600 pl-4">
+        <ol class="relative space-y-4 border-l-2 border-borderlight pl-5 ml-2 mt-2">
           @for (q of data.quakes(); track q.id) {
             <li class="relative fade-in">
-              <span class="absolute -left-[21px] top-1 grid h-3 w-3 place-items-center rounded-full"
-                    [class]="q.magnitud >= 5 ? 'bg-alert' : q.magnitud >= 4 ? 'bg-warn' : 'bg-slate-500'"></span>
-              <div class="flex items-baseline justify-between">
-                <span class="text-sm font-bold"
-                      [class]="q.magnitud >= 5 ? 'text-alert' : q.magnitud >= 4 ? 'text-warn' : 'text-slate-200'">
-                  M {{ q.magnitud.toFixed(1) }}
-                </span>
-                <span class="text-[11px] text-slate-500">{{ ago(q.ocurrido_en) }}</span>
+              <span class="absolute -left-[27px] top-1 grid h-3.5 w-3.5 place-items-center rounded-full ring-4 ring-surface shadow-sm"
+                    [class]="q.magnitud >= 5 ? 'bg-alert' : q.magnitud >= 4 ? 'bg-warn' : 'bg-textmuted'"></span>
+              <div class="flex items-baseline justify-between bg-appbg/50 p-2.5 rounded-xl ring-1 ring-borderlight">
+                <div class="flex flex-col">
+                  <span class="text-sm font-extrabold"
+                        [class]="q.magnitud >= 5 ? 'text-alert' : q.magnitud >= 4 ? 'text-warn' : 'text-textmain'">
+                    M {{ q.magnitud.toFixed(1) }}
+                  </span>
+                  <span class="text-xs font-semibold text-textmain mt-0.5">{{ q.epicentro }}</span>
+                  <span class="text-[11px] font-medium text-textmuted mt-0.5">Prof. {{ q.profundidad_km }} km · {{ q.fuente }}</span>
+                </div>
+                <span class="text-[11px] font-bold text-textmuted self-start">{{ ago(q.ocurrido_en) }}</span>
               </div>
-              <div class="text-xs text-slate-300">{{ q.epicentro }}</div>
-              <div class="text-[11px] text-slate-500">Prof. {{ q.profundidad_km }} km · {{ q.fuente }}</div>
             </li>
           }
         </ol>

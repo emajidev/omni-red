@@ -15,7 +15,20 @@ declare const L: any;
   selector: 'app-crisis-map',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #mapEl class="absolute inset-0 z-0"></div>`
+  template: `<div #mapEl class="w-full h-full"></div>`,
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+    }
+  `]
 })
 export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private data = inject(CrisisDataService);
@@ -55,10 +68,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       preferCanvas: true
     });
 
-    // Dark base layer (CartoDB DarkMatter).
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: 'abcd',
+    // Standard OpenStreetMap for a visible blue sea and colorful map
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19
     }).addTo(this.map);
 
@@ -69,6 +81,13 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.frameVenezuela();
 
     this.renderMarkers(this.data.people(), this.data.centers());
+
+    // Force Leaflet to recalculate map container size after DOM insertion
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize();
+      }
+    }, 150);
   }
 
   ngOnDestroy(): void {
@@ -134,19 +153,19 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Popups (content escaped: defends against XSS in live data) -----------
   private personPopup(p: PersonReport): string {
-    const dot = p.estado === 'a_salvo' ? '#22c55e' : p.estado === 'desaparecido' ? '#ef4444' : '#94a3b8';
+    const dot = p.estado === 'a_salvo' ? '#38a169' : p.estado === 'desaparecido' ? '#e53e3e' : '#718096';
     return `
       <div style="min-width:200px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
           <span style="width:9px;height:9px;border-radius:50%;background:${dot};display:inline-block"></span>
-          <strong style="font-size:14px">${this.esc(p.nombre)}</strong>
+          <strong style="font-size:14px;color:#1A202C">${this.esc(p.nombre)}</strong>
         </div>
-        <div style="font-size:12px;color:#94a3b8">Cédula: <span style="color:#e2e8f0">${this.esc(p.cedula ?? 'N/D')}</span></div>
-        <div style="font-size:12px;color:#94a3b8">Estado: <span style="color:#e2e8f0">${STATUS_LABEL[p.estado]}</span></div>
-        <div style="font-size:12px;color:#94a3b8">Última ubicación: <span style="color:#e2e8f0">${this.esc(p.ubicacion)}</span></div>
-        <div style="font-size:12px;color:#94a3b8">Reporte: <span style="color:#e2e8f0">${this.fmt(p.created_at)}</span></div>
-        <div style="font-size:12px;color:#94a3b8">Fuente: <span style="color:#e2e8f0">${SOURCE_LABEL[p.fuente]}</span></div>
-        ${p.veces_reportado > 1 ? `<div style="margin-top:4px;font-size:11px;color:#f97316">⚑ Confirmado por ${p.veces_reportado} fuentes</div>` : ''}
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Cédula: <span style="color:#1A202C;font-weight:500">${this.esc(p.cedula ?? 'N/D')}</span></div>
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Estado: <span style="color:#1A202C;font-weight:500">${STATUS_LABEL[p.estado]}</span></div>
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Última ubicación: <span style="color:#1A202C;font-weight:500">${this.esc(p.ubicacion)}</span></div>
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Reporte: <span style="color:#1A202C;font-weight:500">${this.fmt(p.created_at)}</span></div>
+        <div style="font-size:12px;color:#718096;margin-bottom:4px">Fuente: <span style="color:#1A202C;font-weight:500">${SOURCE_LABEL[p.fuente]}</span></div>
+        ${p.veces_reportado > 1 ? `<div style="margin-top:6px;font-size:11px;color:#D69E2E;font-weight:600">⚑ Confirmado por ${p.veces_reportado} fuentes</div>` : ''}
       </div>`;
   }
 
@@ -155,14 +174,14 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       ? c.insumos_solicitados.map((s) => this.esc(s)).join(', ') : '—';
     return `
       <div style="min-width:200px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <span style="width:9px;height:9px;border-radius:50%;background:#3b82f6;display:inline-block"></span>
-          <strong style="font-size:14px">${this.esc(c.nombre)}</strong>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#2B6CB0;display:inline-block"></span>
+          <strong style="font-size:14px;color:#1A202C">${this.esc(c.nombre)}</strong>
         </div>
-        <div style="font-size:12px;color:#94a3b8">Centro de acopio</div>
-        <div style="font-size:12px;color:#94a3b8">Ubicación: <span style="color:#e2e8f0">${this.esc(c.ubicacion)}</span></div>
-        <div style="font-size:12px;color:#94a3b8">Insumos: <span style="color:#e2e8f0">${supplies}</span></div>
-        ${c.contacto ? `<div style="font-size:12px;color:#94a3b8">Contacto: <span style="color:#e2e8f0">${this.esc(c.contacto)}</span></div>` : ''}
+        <div style="font-size:11px;color:#2B6CB0;font-weight:700;text-transform:uppercase;margin-bottom:6px">Centro de acopio</div>
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Ubicación: <span style="color:#1A202C;font-weight:500">${this.esc(c.ubicacion)}</span></div>
+        <div style="font-size:12px;color:#718096;margin-bottom:2px">Insumos: <span style="color:#1A202C;font-weight:500">${supplies}</span></div>
+        ${c.contacto ? `<div style="font-size:12px;color:#718096;margin-bottom:2px">Contacto: <span style="color:#1A202C;font-weight:500">${this.esc(c.contacto)}</span></div>` : ''}
       </div>`;
   }
 

@@ -1,0 +1,16 @@
+# Angular / Node
+/node_modules
+/dist
+/out-tsc
+/.angular
+npm-debug.log*
+yarn-error.log*
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Entorno con claves reales (NO subir)
+src/environments/environment.local.ts
+.env

@@ -1,0 +1,90 @@
+/* =============================================================================
+   OmniRed · estilos globales
+   Tailwind se carga por CDN (ver index.html). Aquí solo va lo que Tailwind no
+   cubre: tema oscuro de Leaflet, pines personalizados, scrollbars y utilidades.
+   ============================================================================= */
+
+html, body { height: 100%; margin: 0; }
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Scrollbars discretas en modo oscuro */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: #27313f; border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------------------------------------------------------------------------
+   Mapa Leaflet
+--------------------------------------------------------------------------- */
+.leaflet-container {
+  background: #0b0f14;
+  font-family: inherit;
+}
+/* Popups en modo oscuro */
+.leaflet-popup-content-wrapper {
+  background: #121821;
+  color: #e2e8f0;
+  border: 1px solid #27313f;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+}
+.leaflet-popup-tip { background: #121821; border: 1px solid #27313f; }
+.leaflet-popup-content { margin: 12px 14px; line-height: 1.4; }
+.leaflet-container a.leaflet-popup-close-button { color: #94a3b8; }
+.leaflet-control-zoom a {
+  background: #121821; color: #e2e8f0; border-color: #27313f;
+}
+.leaflet-control-zoom a:hover { background: #1b2430; }
+.leaflet-control-attribution {
+  background: rgba(11,15,20,.7) !important; color: #64748b !important;
+}
+.leaflet-control-attribution a { color: #94a3b8 !important; }
+
+/* ---------------------------------------------------------------------------
+   Pines personalizados (DivIcon)
+--------------------------------------------------------------------------- */
+.omni-pin {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.85);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.5);
+}
+.omni-pin--alert { background: #ef4444; }
+.omni-pin--safe  { background: #22c55e; }
+.omni-pin--info  { background: #3b82f6; }
+
+/* Latido para urgentes (🔴). Anillo expansivo. */
+.omni-pin--pulse { position: relative; }
+.omni-pin--pulse::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid #ef4444; animation: omni-pulse 1.4s ease-out infinite;
+}
+@keyframes omni-pulse {
+  0%   { transform: scale(.6); opacity: .9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Etiqueta de zona resaltada (Caracas / La Guaira / Carabobo) */
+.omni-zona-label {
+  background: rgba(18,24,33,.85);
+  border: 1px solid #27313f;
+  color: #e2e8f0;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+/* ---------------------------------------------------------------------------
+   Drag & drop (zona de carga OCR)
+--------------------------------------------------------------------------- */
+.dropzone--over { border-color: #3b82f6 !important; background: rgba(59,130,246,.08); }
+
+/* Línea de “escaneo” OCR */
+@keyframes omni-scan {
+  0% { top: 0; } 100% { top: 100%; }
+}
+.scanline { position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  animation: omni-scan 1.6s linear infinite; }
+
+/* Oculta utilidades cuando no hay JS de animación, no-op de respaldo */
+.fade-in { animation: omni-fade .3s ease-out both; }
+@keyframes omni-fade { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: none; } }

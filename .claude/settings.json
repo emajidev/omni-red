@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wsl.exe -e bash -lc 'echo \"node: $\\(node -v 2>/dev/null || echo no\\)\"; echo \"npm: $\\(npm -v 2>/dev/null || echo no\\)\"; echo \"ng: $\\(ng version 2>/dev/null | head -1 || echo no\\)\"')",
+      "Bash(wsl.exe -e bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && npm install --no-audit --no-fund > /tmp/omni_install.log 2>&1; echo \"INSTALL_EXIT=$?\"')",
+      "Bash(wsl.exe -e bash -lc 'tail -3 /tmp/omni_install.log 2>/dev/null')",
+      "Bash(wsl.exe -e bash -lc 'tail -4 /tmp/omni_install.log 2>/dev/null; echo \"---\"; ls /home/ema/personal-repos/omni-red/frontend/node_modules >/dev/null 2>&1 && echo \"node_modules present\" || echo \"no node_modules yet\"')",
+      "Bash(wsl.exe -e bash -lc 'tail -5 /tmp/omni_install.log 2>/dev/null; echo \"---exit marker---\"; grep -c \"added\" /tmp/omni_install.log 2>/dev/null; ls /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng >/dev/null 2>&1 && echo \"ng available\" || echo \"ng not yet\"')",
+      "Bash(wsl.exe -e bash -lc 'tail -6 /tmp/omni_install.log 2>/dev/null; echo \"---\"; ls /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng >/dev/null 2>&1 && echo \"ng available\" || echo \"ng not yet\"')",
+      "Bash(wsl.exe -e bash -lc ' *)",
+      "Bash(wsl.exe -e bash -lc 'test -x /home/ema/personal-repos/omni-red/frontend/node_modules/.bin/ng && echo \"DEPS_OK\" || echo \"DEPS_PENDIENTE\"; echo \"--- build ---\"; tail -6 /tmp/omni_build.log 2>/dev/null || echo \"\\(build aún no inicia\\)\"')"
+    ]
+  }
+}

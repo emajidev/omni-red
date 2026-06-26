@@ -6,5 +6,5 @@
  */
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:3000/api'
+  apiBaseUrl: 'https://omni-red-api-production.up.railway.app/api'
 };

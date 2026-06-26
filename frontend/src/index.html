@@ -8,7 +8,7 @@
     (function () {
       try {
         var t = localStorage.getItem('somosuno-theme');
-        if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        if (!t) t = 'light'; // Inicia siempre en light si no hay preferencia
         document.documentElement.classList.add(t);
       } catch (e) {
         document.documentElement.classList.add('light');

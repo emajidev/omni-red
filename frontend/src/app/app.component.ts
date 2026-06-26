@@ -70,6 +70,7 @@ declare var gsap: any;
           <!-- Centered Brand -->
           <div class="flex items-center gap-2">
             <span class="text-base font-extrabold tracking-tight">SomosUno</span>
+            <span style="font-size:1rem;line-height:1;font-family:Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">&#x1F1FB;&#x1F1EA;</span>
           </div>
 
           <!-- Live metrics — uniform family, color only on dot + value -->
@@ -175,12 +176,20 @@ declare var gsap: any;
             <span class="lbl">Buscar</span>
           </button>
 
-          <!-- Item 2: Reportar — red accent -->
-          <button (click)="ui.openReport('desaparecido')" class="nav-btn nav-btn--report" [class.is-active]="ui.sheet() === 'report'">
+          <!-- Item 2: Reportar (Desaparecido) — red accent -->
+          <button (click)="ui.openReport('desaparecido')" class="nav-btn nav-btn--report" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'desaparecido'">
             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
             <span class="lbl">Reportar</span>
+          </button>
+
+          <!-- Item 2.5: Encontrados (A Salvo) -->
+          <button (click)="ui.openReport('a_salvo')" class="nav-btn" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'a_salvo'" style="color: var(--c-safe)">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="lbl">A Salvo</span>
           </button>
 
           <!-- Item 3: Cargar (imagen OCR / CSV) -->

@@ -7,5 +7,5 @@
  */
 export const environment = {
   production: true,
-  apiBaseUrl: '/api'
+  apiBaseUrl: 'omni-red-api-production.up.railway.app/api'
 };

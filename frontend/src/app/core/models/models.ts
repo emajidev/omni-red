@@ -13,6 +13,9 @@ export type ReportSource =
 
 export type CenterCapacity = 'abierto' | 'al_limite' | 'cerrado';
 
+/** Tipo de sitio en `centros_acopio`. */
+export type CenterType = 'acopio' | 'refugio' | 'hospital';
+
 export type OcrStatus =
   | 'subiendo' | 'escaneando' | 'desduplicando' | 'completado' | 'error';
 
@@ -33,16 +36,18 @@ export interface PersonReport {
   lista_origen_id?: string | null;
   veces_reportado: number;
   foto_url?: string | null;
+  centro_id?: string | null;   // sitio (hospital/refugio) donde está la persona
   created_at: string; // ISO
 }
 
-/** Row of `centros_acopio`. */
+/** Row of `centros_acopio` (acopio, refugio u hospital según `tipo`). */
 export interface ReliefCenter {
   id: string;
   nombre: string;
   ubicacion: string;
   lat: number;
   lng: number;
+  tipo: CenterType;
   capacidad: CenterCapacity;
   insumos_solicitados: string[];
   contacto?: string | null;
@@ -91,6 +96,16 @@ export interface NewReport {
 export interface ReportResult {
   unificado: boolean;
   reporte: PersonReport;
+}
+
+/** Payload to create a relief center (RPC crear_acopio). */
+export interface NewCenter {
+  nombre: string;
+  ubicacion: string;
+  lat: number;
+  lng: number;
+  contacto?: string | null;
+  responsable?: string | null;
 }
 
 /** A record extracted by OCR, candidate to be saved. */

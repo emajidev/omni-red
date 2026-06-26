@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
 import { CountUpDirective } from '../../shared/count-up.directive';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
+import { PersonStatus } from '../../core/models/models';
 import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/util/labels';
 
 /**
@@ -40,7 +41,31 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
         <span><b class="text-textmain font-extrabold text-sm" [appCountUp]="m().total_reportados"></b> Reg.</span>
         <span><b class="text-red-500 font-extrabold text-sm" [appCountUp]="m().desaparecidos"></b> Falta</span>
         <span><b class="text-green-600 font-extrabold text-sm" [appCountUp]="m().localizados"></b> Salvo</span>
-        <span class="flex items-center gap-1"><b class="text-orange-500 font-extrabold text-sm" [appCountUp]="m().criticos"></b> Críticos</span>
+      </div>
+
+      <!-- Filtros -->
+      <div class="mb-3 space-y-2">
+        <div class="flex flex-wrap gap-1.5">
+          @for (e of estadoChips; track e.val) {
+            <button type="button" (click)="estadoFilter.set(e.val)"
+                    class="rounded-full px-3 py-1 text-[11px] font-bold transition"
+                    [style.background]="estadoFilter() === e.val ? e.bg : 'var(--chip-bg)'"
+                    [style.color]="estadoFilter() === e.val ? '#fff' : 'var(--txt-muted)'">
+              {{ e.label }}
+            </button>
+          }
+        </div>
+        <select [ngModel]="centroFilter()" (ngModelChange)="centroFilter.set($event)"
+                class="w-full rounded-xl px-3 py-2.5 text-sm font-medium outline-none ring-1"
+                style="background: var(--sheet-inset); color: var(--txt); --tw-ring-color: var(--glass-border)">
+          <option value="">Todos los sitios (hospital/refugio)</option>
+          <optgroup label="Hospitales">
+            @for (h of data.hospitales(); track h.id) { <option [value]="h.id">{{ h.nombre }}</option> }
+          </optgroup>
+          <optgroup label="Refugios">
+            @for (r of data.refugios(); track r.id) { <option [value]="r.id">{{ r.nombre }}</option> }
+          </optgroup>
+        </select>
       </div>
 
       <div class="px-1 mb-2 text-[11px] font-semibold text-textmuted">{{ results().length }} resultado(s)</div>
@@ -65,6 +90,9 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
                   <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="chip(p.estado)">{{ label(p.estado) }}</span>
                 </span>
                 <span class="mt-1 block truncate text-[13px] text-textmuted">{{ p.cedula ?? 'Sin cédula' }} · {{ p.ubicacion }}</span>
+                @if (p.telefono_contacto) {
+                  <span class="mt-1 block text-[12px] font-semibold text-info">📞 {{ p.telefono_contacto }}</span>
+                }
                 <span class="mt-1 block text-[11px] font-semibold text-textmuted">{{ source(p.fuente) }} · {{ ago(p.created_at) }}{{ p.veces_reportado > 1 ? ' · ⚑ '+p.veces_reportado+' fuentes' : '' }}</span>
               </span>
               <span class="mt-2 text-textmuted font-bold">›</span>
@@ -85,15 +113,29 @@ export class SearchSheetComponent {
 
   readonly m = this.data.metrics;
 
+  readonly estadoFilter = signal<'todos' | PersonStatus>('todos');
+  readonly centroFilter = signal<string>(''); // centro_id o '' (todos)
+
+  readonly estadoChips = [
+    { val: 'todos', label: 'Todos', bg: '#64748b' },
+    { val: 'desaparecido', label: 'Desaparecidos', bg: 'var(--c-alert)' },
+    { val: 'a_salvo', label: 'A salvo', bg: 'var(--c-safe)' },
+    { val: 'fallecido', label: 'Fallecidos', bg: '#94a3b8' },
+  ] as const;
+
   readonly results = computed(() => {
     const q = this.norm(this.ui.query());
-    const list = this.data.people();
-    if (!q) return list;
-    return list.filter((p) =>
-      this.norm(p.nombre).includes(q) ||
-      this.norm(p.cedula ?? '').includes(q) ||
-      this.norm(p.ubicacion).includes(q)
-    );
+    const estado = this.estadoFilter();
+    const centro = this.centroFilter();
+    return this.data.people()
+      .filter((p) => estado === 'todos' || p.estado === estado)
+      .filter((p) => !centro || p.centro_id === centro)
+      .filter((p) =>
+        !q ||
+        this.norm(p.nombre).includes(q) ||
+        this.norm(p.cedula ?? '').includes(q) ||
+        this.norm(p.ubicacion).includes(q)
+      );
   });
 
   focus(p: { id: string; lat: number; lng: number }): void {

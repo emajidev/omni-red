@@ -92,7 +92,8 @@ with (security_invoker = true) as   -- respeta RLS del invocador (PG15+/Supabase
     lng,
     fuente,
     veces_reportado,
-    created_at
+    created_at,
+    telefono_contacto   -- número para contactar al reportado / quien reporta
   from public.reportes_personas;
 
 comment on view public.v_reportes_publico is
@@ -108,6 +109,7 @@ revoke all on function public.reportar_persona   from public;
 revoke all on function public.obtener_metricas    from public;
 revoke all on function public.registrar_lista_ocr from public;
 revoke all on function public.actualizar_acopio   from public;
+revoke all on function public.crear_acopio        from public;
 
 grant execute on function public.reportar_persona(
   text, text, estado_persona, text, double precision, double precision,
@@ -120,3 +122,5 @@ grant execute on function public.registrar_lista_ocr(
   text, text, estado_ocr, text, int, int, text, uuid) to authenticated;
 grant execute on function public.actualizar_acopio(
   uuid, capacidad_acopio, text[]) to authenticated;
+grant execute on function public.crear_acopio(
+  text, text, double precision, double precision, text, text) to authenticated;

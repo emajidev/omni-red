@@ -2,7 +2,11 @@ import { Injectable, signal } from '@angular/core';
 import { PersonStatus } from '../models/models';
 
 /** Which half-screen bottom sheet is open. */
-export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | null;
+export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | null;
+
+/** Visual theme. Persisted in localStorage + reflected on <html>. */
+export type Theme = 'light' | 'dark';
+const THEME_KEY = 'somosuno-theme';
 
 export interface Toast {
   id: number;
@@ -40,6 +44,31 @@ export class UiService {
   /** Ephemeral notifications queue. */
   readonly toasts = signal<Toast[]>([]);
   private toastSeq = 0;
+
+  /** Active theme (initialised from the class the pre-boot script set). */
+  readonly theme = signal<Theme>(this.readInitialTheme());
+
+  private readInitialTheme(): Theme {
+    if (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  /** Flip light <-> dark, persist, and reflect on <html>. */
+  toggleTheme(): void {
+    this.setTheme(this.theme() === 'dark' ? 'light' : 'dark');
+  }
+
+  setTheme(theme: Theme): void {
+    this.theme.set(theme);
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark');
+      root.classList.add(theme);
+    }
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
+  }
 
   open(sheet: Exclude<Sheet, null>): void {
     this.sheet.set(sheet);

@@ -1,8 +1,20 @@
 <!doctype html>
-<html lang="es" class="light">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <title>SomosUno · Respuesta a Crisis</title>
+  <script>
+    // Aplica el tema guardado ANTES de pintar para evitar el parpadeo (FOUC).
+    (function () {
+      try {
+        var t = localStorage.getItem('somosuno-theme');
+        if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.classList.add(t);
+      } catch (e) {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
   <script>
     function showBanner(text) {
       // Remove any existing banner
@@ -136,10 +148,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="bg-appbg text-textmain font-sans antialiased overflow-hidden">
+<body class="font-sans antialiased overflow-hidden">
   <app-root>
-    <!-- Basic fallback splash, but we'll use an Angular one for 6 seconds -->
-    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#F2F2F7;color:#000;font-family:'Poppins',system-ui;">
+    <!-- Splash de respaldo (Angular muestra el suyo encima) -->
+    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--txt);font-family:'Poppins',system-ui;">
       <div style="text-align:center">
         <div style="font-size:2.5rem;font-weight:800;letter-spacing:-.05em">SomosUno</div>
       </div>

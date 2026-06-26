@@ -1,88 +1,166 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
-import { CAPACITY_CHIP, CAPACITY_LABEL, timeAgo } from '../../core/util/labels';
+import { CAPACITY_CHIP, CAPACITY_LABEL } from '../../core/util/labels';
+import { PLACES } from '../../core/data/places';
 
-/** Two tabs in one sheet: relief centers grid + seismic feed. */
+/** Acopio: lista de centros + formulario para registrar uno nuevo. */
 @Component({
   selector: 'app-centers-sheet',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BottomSheetComponent],
+  imports: [BottomSheetComponent, ReactiveFormsModule],
   template: `
-    <app-bottom-sheet title="Acopio y sismos" subtitle="Centros activos y últimas réplicas"
+    <app-bottom-sheet title="Centros de acopio" subtitle="Puntos activos y registro de nuevos"
                       icon="hospital" accentBg="bg-infobg text-info" (close)="ui.close()">
 
       <!-- Tabs -->
-      <div class="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-white/10 p-1.5 shadow-inner ring-1 ring-white/10">
-        <button (click)="tab.set('centers')"
-                class="rounded-xl py-2.5 text-sm font-bold transition shadow-sm"
-                [class]="tab()==='centers' ? 'bg-white/15 text-blue-400 ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'">
-          📦 Centros ({{ data.centers().length }})
+      <div class="mb-4 grid grid-cols-2 gap-2 rounded-2xl p-1.5" style="background: var(--chip-bg)">
+        <button (click)="tab.set('list')"
+                class="rounded-xl py-2.5 text-sm font-bold transition"
+                [style.background]="tab()==='list' ? 'var(--sheet)' : 'transparent'"
+                [style.color]="tab()==='list' ? 'var(--txt)' : 'var(--txt-muted)'">
+          📦 Centros ({{ data.acopios().length }})
         </button>
-        <button (click)="tab.set('quakes')"
-                class="rounded-xl py-2.5 text-sm font-bold transition shadow-sm"
-                [class]="tab()==='quakes' ? 'bg-white/15 text-red-400 ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'">
-          🌐 Sismos ({{ data.quakes().length }})
+        <button (click)="tab.set('add')"
+                class="rounded-xl py-2.5 text-sm font-bold transition"
+                [style.background]="tab()==='add' ? 'var(--sheet)' : 'transparent'"
+                [style.color]="tab()==='add' ? 'var(--txt)' : 'var(--txt-muted)'">
+          ➕ Agregar
         </button>
       </div>
 
-      @if (tab() === 'centers') {
+      @if (tab() === 'list') {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          @for (c of data.centers(); track c.id) {
+          @for (c of data.acopios(); track c.id) {
             <button (click)="focus(c)"
-                    class="rounded-2xl bg-white/5 p-4 text-left shadow-sm ring-1 ring-white/10 hover:bg-white/10 active:scale-[.99] transition fade-in text-white">
+                    class="rounded-2xl p-4 text-left ring-1 active:scale-[.99] transition fade-in"
+                    style="background: var(--sheet-inset); border-color: var(--glass-border); --tw-ring-color: var(--glass-border)">
               <div class="flex items-start justify-between gap-3">
-                <span class="text-sm font-extrabold text-white">{{ c.nombre }}</span>
-                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm" [class]="cap(c.capacidad)">{{ capLabel(c.capacidad) }}</span>
+                <span class="text-sm font-extrabold" style="color: var(--txt)">{{ c.nombre }}</span>
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="cap(c.capacidad)">{{ capLabel(c.capacidad) }}</span>
               </div>
-              <div class="mt-1 text-[13px] font-medium text-white/60">📍 {{ c.ubicacion }}</div>
+              <div class="mt-1 text-[13px] font-medium" style="color: var(--txt-muted)">📍 {{ c.ubicacion }}</div>
+              @if (c.responsable) {
+                <div class="mt-1 text-[12px] font-medium" style="color: var(--txt-muted)">👤 {{ c.responsable }}</div>
+              }
+              @if (c.contacto) {
+                <div class="mt-0.5 text-[12px] font-semibold" style="color: var(--c-info)">📞 {{ c.contacto }}</div>
+              }
               <div class="mt-3 flex flex-wrap gap-1.5">
                 @for (s of c.insumos_solicitados; track s) {
-                  <span class="rounded-lg bg-white/10 px-2 py-1 text-[10px] font-bold text-white">{{ s }}</span>
+                  <span class="rounded-lg px-2 py-1 text-[10px] font-bold" style="background: var(--chip-bg); color: var(--txt)">{{ s }}</span>
                 } @empty {
-                  <span class="text-[11px] font-medium text-white/60">Sin solicitudes activas</span>
+                  <span class="text-[11px] font-medium" style="color: var(--txt-muted)">Sin solicitudes activas</span>
                 }
               </div>
             </button>
+          } @empty {
+            <div class="col-span-full py-8 text-center text-sm" style="color: var(--txt-muted)">No hay centros registrados aún.</div>
           }
         </div>
       } @else {
-        <ol class="relative space-y-4 border-l-2 border-white/10 pl-5 ml-2 mt-2">
-          @for (q of data.quakes(); track q.id) {
-            <li class="relative fade-in">
-              <span class="absolute -left-[27px] top-1 grid h-3.5 w-3.5 place-items-center rounded-full ring-4 ring-black/80 shadow-sm"
-                    [class]="q.magnitud >= 5 ? 'bg-alert' : q.magnitud >= 4 ? 'bg-warn' : 'bg-white/40'"></span>
-              <div class="flex items-baseline justify-between bg-white/5 p-2.5 rounded-xl ring-1 ring-white/10">
-                <div class="flex flex-col">
-                  <span class="text-sm font-extrabold"
-                        [class]="q.magnitud >= 5 ? 'text-red-400' : q.magnitud >= 4 ? 'text-orange-400' : 'text-white'">
-                    M {{ q.magnitud.toFixed(1) }}
-                  </span>
-                  <span class="text-xs font-semibold text-white mt-0.5">{{ q.epicentro }}</span>
-                  <span class="text-[11px] font-medium text-white/60 mt-0.5">Prof. {{ q.profundidad_km }} km · {{ q.fuente }}</span>
-                </div>
-                <span class="text-[11px] font-bold text-white/40 self-start">{{ ago(q.ocurrido_en) }}</span>
-              </div>
-            </li>
-          }
-        </ol>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
+          <!-- Nombre del centro -->
+          <label class="block">
+            <span class="text-xs font-semibold ml-1" style="color: var(--txt-muted)">Nombre del centro *</span>
+            <input formControlName="nombre" type="text" autocomplete="off" placeholder="Ej: Refugio Catia"
+                   class="mt-1.5 w-full rounded-xl px-4 py-3 text-sm font-medium outline-none ring-1 transition"
+                   style="background: var(--sheet-inset); color: var(--txt); --tw-ring-color: var(--glass-border)" />
+            @if (invalid('nombre')) { <span class="text-[11px] font-semibold ml-1 mt-1 block" style="color: var(--c-alert)">Indica un nombre (mínimo 2 caracteres).</span> }
+          </label>
+
+          <!-- Responsable -->
+          <label class="block">
+            <span class="text-xs font-semibold ml-1" style="color: var(--txt-muted)">Nombre del responsable</span>
+            <input formControlName="responsable" type="text" autocomplete="off" placeholder="Ej: María González"
+                   class="mt-1.5 w-full rounded-xl px-4 py-3 text-sm font-medium outline-none ring-1 transition"
+                   style="background: var(--sheet-inset); color: var(--txt); --tw-ring-color: var(--glass-border)" />
+          </label>
+
+          <!-- Ubicación -->
+          <label class="block">
+            <span class="text-xs font-semibold ml-1" style="color: var(--txt-muted)">Ubicación *</span>
+            <select formControlName="place"
+                    class="mt-1.5 w-full rounded-xl px-4 py-3 text-sm font-medium outline-none ring-1 transition"
+                    style="background: var(--sheet-inset); color: var(--txt); --tw-ring-color: var(--glass-border)">
+              <option value="" disabled>Selecciona una zona…</option>
+              @for (pl of places; track pl.name) {
+                <option [value]="pl.name">{{ pl.name }}</option>
+              }
+            </select>
+            @if (invalid('place')) { <span class="text-[11px] font-semibold ml-1 mt-1 block" style="color: var(--c-alert)">Selecciona la ubicación.</span> }
+          </label>
+
+          <!-- Número de contacto -->
+          <label class="block">
+            <span class="text-xs font-semibold ml-1" style="color: var(--txt-muted)">Número de contacto</span>
+            <input formControlName="contacto" type="tel" inputmode="tel" autocomplete="off" placeholder="Ej: 0212-555-1234"
+                   class="mt-1.5 w-full rounded-xl px-4 py-3 text-sm font-medium outline-none ring-1 transition"
+                   style="background: var(--sheet-inset); color: var(--txt); --tw-ring-color: var(--glass-border)" />
+          </label>
+
+          <button type="submit" [disabled]="form.invalid || saving()"
+                  class="w-full rounded-2xl py-3.5 mt-2 text-sm font-bold text-white shadow-md transition active:scale-[.98] disabled:opacity-50 bg-gradient-to-tr from-blue-600 to-blue-400 shadow-[0_4px_16px_rgba(37,99,235,0.3)]">
+            {{ saving() ? 'Guardando…' : 'Agregar centro de acopio' }}
+          </button>
+        </form>
       }
     </app-bottom-sheet>
   `
 })
 export class CentersSheetComponent {
+  private fb = inject(FormBuilder);
   data = inject(CrisisDataService);
   ui = inject(UiService);
 
-  readonly tab = signal<'centers' | 'quakes'>('centers');
+  readonly places = PLACES;
+  readonly tab = signal<'list' | 'add'>('list');
+  readonly saving = signal(false);
+
+  form = this.fb.nonNullable.group({
+    nombre: ['', [Validators.required, Validators.minLength(2)]],
+    responsable: [''],
+    place: ['', [Validators.required]],
+    contacto: ['']
+  });
 
   focus(c: { id: string; lat: number; lng: number }): void {
     this.ui.focusOn({ lat: c.lat, lng: c.lng, id: c.id, zoom: 14 });
   }
 
+  invalid(name: string): boolean {
+    const c = this.form.get(name);
+    return !!c && c.invalid && (c.dirty || c.touched);
+  }
+
+  async submit(): Promise<void> {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.saving.set(true);
+    try {
+      const v = this.form.getRawValue();
+      const place = PLACES.find((p) => p.name === v.place) ?? PLACES[0];
+      const center = await this.data.addCenter({
+        nombre: v.nombre.trim(),
+        ubicacion: v.place,
+        lat: place.lat + (Math.random() - 0.5) * 0.01,
+        lng: place.lng + (Math.random() - 0.5) * 0.01,
+        contacto: v.contacto?.trim() || null,
+        responsable: v.responsable?.trim() || null
+      });
+      this.ui.toast('Centro de acopio agregado 📦', 'success');
+      this.form.reset({ nombre: '', responsable: '', place: '', contacto: '' });
+      this.tab.set('list');
+      this.ui.focusOn({ lat: center.lat, lng: center.lng, id: center.id, zoom: 14 });
+    } catch (e: any) {
+      this.ui.toast('No se pudo agregar el centro: ' + (e?.message ?? 'error'), 'alert');
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
   cap = (c: any) => CAPACITY_CHIP[c as keyof typeof CAPACITY_CHIP];
   capLabel = (c: any) => CAPACITY_LABEL[c as keyof typeof CAPACITY_LABEL];
-  ago = (iso: string) => timeAgo(iso);
 }

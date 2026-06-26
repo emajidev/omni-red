@@ -4,9 +4,9 @@ import {
 } from '@angular/core';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
-import { HIGHLIGHT_ZONES } from '../../core/data/mock-data';
-import { PersonReport, ReliefCenter } from '../../core/models/models';
-import { SOURCE_LABEL, STATUS_LABEL } from '../../core/util/labels';
+import { HIGHLIGHT_ZONES } from '../../core/data/map-zones';
+import { PersonReport, Quake, ReliefCenter } from '../../core/models/models';
+import { CRISIS_SINCE, SOURCE_LABEL, STATUS_LABEL } from '../../core/util/labels';
 
 // Leaflet is loaded from CDN (see index.html) and exposed as global `L`.
 declare const L: any;
@@ -38,14 +38,29 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private map: any;
   private peopleLayer: any;
   private centersLayer: any;
+  private quakesLayer: any;
+  private tileLayer: any;
   private markersById = new Map<string, any>();
+
+  // CartoDB raster tiles — light (Voyager) y oscuro (Dark Matter).
+  private static readonly TILES = {
+    light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  };
 
   constructor() {
     // Rebuild markers whenever the data changes.
     effect(() => {
       const people = this.data.people();
       const centers = this.data.centers();
-      if (this.map) this.renderMarkers(people, centers);
+      const quakes = this.data.quakes();
+      if (this.map) this.renderMarkers(people, centers, quakes);
+    });
+
+    // Swap the basemap when the theme toggles.
+    effect(() => {
+      const theme = this.ui.theme();
+      if (this.map) this.applyTiles(theme);
     });
 
     // React to focus requests (tap on a result / metric).
@@ -68,20 +83,18 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       preferCanvas: true
     });
 
-    // Light mode map (CartoDB Voyager) for Apple-like aesthetic
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(this.map);
+    // Basemap matches the active theme (light Voyager / dark Dark Matter).
+    this.applyTiles(this.ui.theme());
 
+    // Epicentros debajo, pines de personas/centros encima (clicables).
+    this.quakesLayer = L.layerGroup().addTo(this.map);
     this.peopleLayer = L.layerGroup().addTo(this.map);
     this.centersLayer = L.layerGroup().addTo(this.map);
 
     // this.drawHighlightZones();
     this.frameVenezuela();
 
-    this.renderMarkers(this.data.people(), this.data.centers());
+    this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes());
 
     // Force Leaflet to recalculate map container size after DOM insertion
     setTimeout(() => {
@@ -99,6 +112,19 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private frameVenezuela(): void {
     // Center roughly on Venezuela
     this.map.setView([7.5, -66.0], 6);
+  }
+
+  // --- Basemap (swaps with the theme) ---------------------------------------
+  private applyTiles(theme: 'light' | 'dark'): void {
+    if (this.tileLayer) this.map.removeLayer(this.tileLayer);
+    this.tileLayer = L.tileLayer(CrisisMapComponent.TILES[theme], {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19
+    });
+    this.tileLayer.addTo(this.map);
+    // Keep the basemap below markers/popups.
+    this.tileLayer.bringToBack();
   }
 
   // --- Highlight Caracas / La Guaira / Carabobo -----------------------------
@@ -126,10 +152,55 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   // --- Markers --------------------------------------------------------------
-  private renderMarkers(people: PersonReport[], centers: ReliefCenter[]): void {
+  private renderMarkers(people: PersonReport[], centers: ReliefCenter[], quakes: Quake[] = []): void {
     this.peopleLayer.clearLayers();
     this.centersLayer.clearLayers();
+    this.quakesLayer.clearLayers();
     this.markersById.clear();
+
+    // Epicentros de sismos (datos del endpoint /sismos).
+    // El mapa solo muestra los de la crisis actual (desde CRISIS_SINCE);
+    // el histórico (botón Sismos) los muestra todos.
+    const crisisQuakes = quakes.filter((q) => new Date(q.ocurrido_en) >= CRISIS_SINCE);
+    // Los DOS de mayor magnitud se resaltan: marcador más grande + etiqueta fija.
+    const topQuakeIds = new Set(
+      [...crisisQuakes].sort((a, b) => b.magnitud - a.magnitud).slice(0, 2).map((q) => q.id)
+    );
+    for (const q of crisisQuakes) {
+      const isMajor = topQuakeIds.has(q.id);
+      const base = Math.round(12 + Math.min(q.magnitud, 8) * 2); // 12–28px según magnitud
+      const size = isMajor ? base + 10 : base;
+      const cls = isMajor ? 'omni-quake omni-quake--major' : 'omni-quake';
+
+      // Área aproximada afectada (radio según magnitud).
+      L.circle([q.lat, q.lng], {
+        radius: this.quakeRadiusKm(q.magnitud) * 1000,
+        color: isMajor ? '#ef4444' : '#f59e0b',
+        weight: 1,
+        opacity: 0.5,
+        fillColor: isMajor ? '#ef4444' : '#f59e0b',
+        fillOpacity: isMajor ? 0.1 : 0.07,
+        interactive: false
+      }).addTo(this.quakesLayer);
+
+      const marker = L.marker([q.lat, q.lng], {
+        zIndexOffset: isMajor ? 1000 : 0,
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="${cls}" style="width:${size}px;height:${size}px"><span class="omni-quake-mag">${q.magnitud.toFixed(1)}</span></div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2]
+        })
+      }).bindPopup(this.quakePopup(q), { maxWidth: 280 });
+      if (isMajor) {
+        marker.bindTooltip(
+          `M${q.magnitud.toFixed(1)} · ${this.esc(q.epicentro)}`,
+          { permanent: true, direction: 'top', className: 'omni-quake-label', offset: [0, -size / 2] }
+        );
+      }
+      marker.addTo(this.quakesLayer);
+      this.markersById.set(q.id, marker);
+    }
 
     for (const p of people) {
       const isMissing = p.estado === 'desaparecido';
@@ -144,48 +215,87 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     }
 
     for (const c of centers) {
+      const emoji = c.tipo === 'hospital' ? '🏥' : c.tipo === 'refugio' ? '🏠' : '📦';
       const marker = L.marker([c.lat, c.lng], {
-        icon: L.divIcon({ className: '', html: `<div class="omni-pin omni-pin--info"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="omni-site omni-site--${c.tipo}">${emoji}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        })
       }).bindPopup(this.centerPopup(c), { maxWidth: 280 });
       marker.addTo(this.centersLayer);
       this.markersById.set(c.id, marker);
     }
   }
 
-  // --- Popups (content escaped: defends against XSS in live data) -----------
+  // --- Popups (themed via .omni-pop classes; content escaped vs. XSS) -------
   private personPopup(p: PersonReport): string {
-    const dot = p.estado === 'a_salvo' ? '#38a169' : p.estado === 'desaparecido' ? '#e53e3e' : '#718096';
-    const imgHtml = p.foto_url ? `<img src="${this.esc(p.foto_url)}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)" />` : '';
+    const dot = p.estado === 'a_salvo' ? 'var(--c-safe)' : p.estado === 'desaparecido' ? 'var(--c-alert)' : '#94a3b8';
+    const imgHtml = p.foto_url ? `<img src="${this.esc(p.foto_url)}" alt="" />` : '';
     return `
-      <div style="min-width:200px">
+      <div class="omni-pop">
         ${imgHtml}
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span style="width:9px;height:9px;border-radius:50%;background:${dot};display:inline-block"></span>
-          <strong style="font-size:14px;color:#1A202C">${this.esc(p.nombre)}</strong>
+        <div class="head">
+          <span class="sdot" style="background:${dot}"></span>
+          <strong>${this.esc(p.nombre)}</strong>
         </div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Cédula: <span style="color:#1A202C;font-weight:500">${this.esc(p.cedula ?? 'N/D')}</span></div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Estado: <span style="color:#1A202C;font-weight:500">${STATUS_LABEL[p.estado]}</span></div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Última ubicación: <span style="color:#1A202C;font-weight:500">${this.esc(p.ubicacion)}</span></div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Reporte: <span style="color:#1A202C;font-weight:500">${this.fmt(p.created_at)}</span></div>
-        <div style="font-size:12px;color:#718096;margin-bottom:4px">Fuente: <span style="color:#1A202C;font-weight:500">${SOURCE_LABEL[p.fuente]}</span></div>
-        ${p.veces_reportado > 1 ? `<div style="margin-top:6px;font-size:11px;color:#D69E2E;font-weight:600">⚑ Confirmado por ${p.veces_reportado} fuentes</div>` : ''}
+        <div class="row">Cédula: <b>${this.esc(p.cedula ?? 'N/D')}</b></div>
+        <div class="row">Estado: <b>${STATUS_LABEL[p.estado]}</b></div>
+        ${p.telefono_contacto ? `<div class="row">📞 Contacto: <b>${this.esc(p.telefono_contacto)}</b></div>` : ''}
+        <div class="row">Última ubicación: <b>${this.esc(p.ubicacion)}</b></div>
+        <div class="row">Reporte: <b>${this.fmt(p.created_at)}</b></div>
+        <div class="row">Fuente: <b>${SOURCE_LABEL[p.fuente]}</b></div>
+        ${p.veces_reportado > 1 ? `<div class="flag">⚑ Confirmado por ${p.veces_reportado} fuentes</div>` : ''}
       </div>`;
   }
 
   private centerPopup(c: ReliefCenter): string {
+    const kind = c.tipo === 'hospital' ? 'Hospital' : c.tipo === 'refugio' ? 'Refugio' : 'Centro de acopio';
+    const color = c.tipo === 'hospital' ? 'var(--c-alert)' : c.tipo === 'refugio' ? 'var(--c-safe)' : 'var(--c-info)';
     const supplies = c.insumos_solicitados.length
       ? c.insumos_solicitados.map((s) => this.esc(s)).join(', ') : '—';
+    const peopleCount = (c.tipo === 'hospital' || c.tipo === 'refugio')
+      ? this.data.people().filter((p) => p.centro_id === c.id).length : 0;
     return `
-      <div style="min-width:200px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-          <span style="width:9px;height:9px;border-radius:50%;background:#2B6CB0;display:inline-block"></span>
-          <strong style="font-size:14px;color:#1A202C">${this.esc(c.nombre)}</strong>
+      <div class="omni-pop">
+        <div class="head">
+          <span class="sdot" style="background:${color}"></span>
+          <strong>${this.esc(c.nombre)}</strong>
         </div>
-        <div style="font-size:11px;color:#2B6CB0;font-weight:700;text-transform:uppercase;margin-bottom:6px">Centro de acopio</div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Ubicación: <span style="color:#1A202C;font-weight:500">${this.esc(c.ubicacion)}</span></div>
-        <div style="font-size:12px;color:#718096;margin-bottom:2px">Insumos: <span style="color:#1A202C;font-weight:500">${supplies}</span></div>
-        ${c.contacto ? `<div style="font-size:12px;color:#718096;margin-bottom:2px">Contacto: <span style="color:#1A202C;font-weight:500">${this.esc(c.contacto)}</span></div>` : ''}
+        <div class="kind" style="color:${color}">${kind}</div>
+        <div class="row">Ubicación: <b>${this.esc(c.ubicacion)}</b></div>
+        ${(c.tipo === 'hospital' || c.tipo === 'refugio')
+          ? `<div class="row">Personas: <b>${peopleCount}</b></div>`
+          : `<div class="row">Insumos: <b>${supplies}</b></div>`}
+        ${c.responsable ? `<div class="row">Responsable: <b>${this.esc(c.responsable)}</b></div>` : ''}
+        ${c.contacto ? `<div class="row">📞 Contacto: <b>${this.esc(c.contacto)}</b></div>` : ''}
       </div>`;
+  }
+
+  private quakePopup(q: Quake): string {
+    return `
+      <div class="omni-pop">
+        <div class="head">
+          <span class="sdot" style="background:var(--c-warn)"></span>
+          <strong>Sismo · M ${q.magnitud.toFixed(1)}</strong>
+        </div>
+        <div class="kind" style="color:var(--c-warn)">Epicentro</div>
+        <div class="row">Epicentro: <b>${this.esc(q.epicentro)}</b></div>
+        <div class="row">Profundidad: <b>${q.profundidad_km} km</b></div>
+        <div class="row">Área aprox.: <b>~${Math.round(this.quakeRadiusKm(q.magnitud))} km de radio</b></div>
+        <div class="row">Ocurrido: <b>${this.fmt(q.ocurrido_en)}</b></div>
+        <div class="row">Fuente: <b>${this.esc(q.fuente)}</b></div>
+      </div>`;
+  }
+
+  /**
+   * Radio aproximado (km) del área percibida/afectada según la magnitud.
+   * Es una aproximación visual (crece exponencialmente con M), no un cálculo
+   * sismológico exacto.
+   */
+  private quakeRadiusKm(mag: number): number {
+    return Math.max(2, Math.pow(10, 0.43 * mag - 1.0));
   }
 
   private fmt(iso: string): string {

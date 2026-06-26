@@ -1,6 +1,12 @@
 /** Shared labels, colors and formatters for the UI (UI text stays in Spanish). */
 import { CenterCapacity, PersonStatus, ReportSource } from '../models/models';
 
+/**
+ * Inicio de la crisis sísmica actual. El MAPA solo dibuja sismos desde esta
+ * fecha (la secuencia de Yumare del 24-jun-2026); el histórico los muestra todos.
+ */
+export const CRISIS_SINCE = new Date('2026-06-24T00:00:00Z');
+
 export const STATUS_LABEL: Record<PersonStatus, string> = {
   desaparecido: 'Desaparecido',
   a_salvo: 'A salvo',

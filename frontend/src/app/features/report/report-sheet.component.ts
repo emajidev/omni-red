@@ -6,26 +6,7 @@ import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.com
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { PersonStatus } from '../../core/models/models';
-
-/** Known localities → coordinates (avoids asking the user for lat/lng). */
-const PLACES = [
-  { name: 'Caracas — Centro', lat: 10.5061, lng: -66.9146 },
-  { name: 'Caracas — Catia', lat: 10.5080, lng: -66.9480 },
-  { name: 'Caracas — Petare', lat: 10.4760, lng: -66.8080 },
-  { name: 'Caracas — Chacao', lat: 10.4970, lng: -66.8530 },
-  { name: 'Caracas — Baruta', lat: 10.4350, lng: -66.8740 },
-  { name: 'Caracas — El Hatillo', lat: 10.4240, lng: -66.8240 },
-  { name: 'Caracas — El Valle', lat: 10.4600, lng: -66.9100 },
-  { name: 'La Guaira — Maiquetía', lat: 10.5940, lng: -66.9870 },
-  { name: 'La Guaira — Catia La Mar', lat: 10.6030, lng: -67.0300 },
-  { name: 'La Guaira — Macuto', lat: 10.6140, lng: -66.9410 },
-  { name: 'Los Teques (Miranda)', lat: 10.3440, lng: -67.0410 },
-  { name: 'San Antonio de los Altos (Miranda)', lat: 10.3800, lng: -66.9600 },
-  { name: 'Guarenas (Miranda)', lat: 10.4710, lng: -66.6110 },
-  { name: 'Guatire (Miranda)', lat: 10.4700, lng: -66.5400 },
-  { name: 'Valencia (Carabobo)', lat: 10.1620, lng: -68.0080 },
-  { name: 'Maracay (Aragua)', lat: 10.2470, lng: -67.5960 }
-];
+import { PLACES } from '../../core/data/places';
 
 /** Optional cédula validator: empty is OK; otherwise must look like V-12.345.678. */
 function cedulaValidator(c: AbstractControl): ValidationErrors | null {
@@ -87,6 +68,13 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
           </label>
         </div>
 
+        <!-- Teléfono de contacto -->
+        <label class="block">
+          <span class="text-xs font-semibold text-textmuted ml-1">Teléfono de contacto</span>
+          <input formControlName="telefono" type="tel" inputmode="tel" autocomplete="off" placeholder="Ej: 0414-555-1234"
+                 class="mt-1.5 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info placeholder:text-textmuted transition" />
+        </label>
+
         <!-- Location Custom Autocomplete -->
         <div class="relative">
           <span class="text-xs font-semibold text-textmuted ml-1 block mb-1.5">Última ubicación conocida *</span>
@@ -109,6 +97,21 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
             </ul>
           }
         </div>
+
+        <!-- Hospital / Refugio (si la persona está en uno) -->
+        <label class="block">
+          <span class="text-xs font-semibold text-textmuted ml-1">Hospital / Refugio (si aplica)</span>
+          <select formControlName="centro"
+                  class="mt-1.5 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info transition">
+            <option value="">— Ninguno —</option>
+            <optgroup label="Hospitales">
+              @for (h of data.hospitales(); track h.id) { <option [value]="h.id">{{ h.nombre }}</option> }
+            </optgroup>
+            <optgroup label="Refugios">
+              @for (r of data.refugios(); track r.id) { <option [value]="r.id">{{ r.nombre }}</option> }
+            </optgroup>
+          </select>
+        </label>
 
         <!-- Detail -->
         <label class="block">
@@ -151,7 +154,7 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
 })
 export class ReportSheetComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private data = inject(CrisisDataService);
+  data = inject(CrisisDataService);
   ui = inject(UiService);
 
   readonly places = PLACES;
@@ -166,7 +169,9 @@ export class ReportSheetComponent implements OnInit {
     nombre: ['', [Validators.required, Validators.minLength(3)]],
     cedula: ['', [cedulaValidator]],
     edad: [null as number | null],
+    telefono: [''],
     place: ['', [Validators.required]],
+    centro: [''],
     detalle: ['']
   });
 
@@ -257,10 +262,16 @@ export class ReportSheetComponent implements OnInit {
         lng: lng,
         fuente: 'web',
         edad: v.edad ?? null,
+        telefono_contacto: v.telefono?.trim() || null,
         detalle: v.detalle?.trim() || null,
         reportado_por: 'autorreporte',
         foto_url: this.fotoPreview()
       });
+
+      // Si se indicó hospital/refugio, vincular la persona a ese sitio.
+      if (v.centro) {
+        try { await this.data.assignPersonCenter(res.reporte.id, v.centro); } catch { /* no bloquea el reporte */ }
+      }
 
       if (res.unificado) {
         this.ui.toast(`Reporte unificado con uno existente (desduplicación por IA). Confirmaciones: ${res.reporte.veces_reportado}.`, 'warn', 6000);

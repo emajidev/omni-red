@@ -197,6 +197,31 @@ begin
 end $$;
 
 -- =============================================================================
+-- RPC: crear_acopio — alta de un nuevo centro de acopio
+-- (escritura segura vía RPC, igual que el resto; SECURITY DEFINER)
+-- =============================================================================
+create or replace function public.crear_acopio(
+  p_nombre      text,
+  p_ubicacion   text,
+  p_lat         double precision,
+  p_lng         double precision,
+  p_contacto    text default null,
+  p_responsable text default null
+)
+returns public.centros_acopio
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare v_row public.centros_acopio;
+begin
+  insert into public.centros_acopio (nombre, ubicacion, lat, lng, contacto, responsable)
+  values (p_nombre, p_ubicacion, p_lat, p_lng, p_contacto, p_responsable)
+  returning * into v_row;
+  return v_row;
+end $$;
+
+-- =============================================================================
 -- RPC: obtener_metricas — tarjetas del dashboard, calculadas en servidor
 -- (evita exponer la tabla completa solo para contar)
 -- =============================================================================

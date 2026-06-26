@@ -1,0 +1,11 @@
+# Evita que "COPY . ." sobrescriba el node_modules instalado dentro de la imagen
+# (el del host usa el layout symlinked de pnpm y rompería la resolución ESM).
+node_modules
+dist
+.angular
+.git
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log
+package-lock.json

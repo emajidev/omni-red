@@ -1,4 +1,0 @@
-packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'frontend' # O la ruta donde tengas tus proyectos

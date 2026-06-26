@@ -55,13 +55,11 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     [16.5, -57.0],  // NE (mar Caribe)
   ];
 
-  // Encuadre inicial al cargar (lo que se ve): zona afectada (norte-centro de
-  // Venezuela: Caracas/La Guaira/Aragua) con algo de Caribe arriba. Recuadro
-  // más ajustado → fitBounds abre con más zoom-in. Se adapta a la pantalla.
-  private static readonly FRAME_BOUNDS: [[number, number], [number, number]] = [
-    [8.5, -70.5],   // SW
-    [12.8, -63.0],  // NE
-  ];
+  // Vista inicial: centro y zoom con que arranca el mapa (zona afectada:
+  // Caracas / La Guaira / Yumare, con algo de Caribe arriba). El zoom inicial
+  // es además el MÍNIMO: no se puede alejar más → nunca quedan espacios vacíos.
+  private static readonly INITIAL_CENTER: [number, number] = [10.2, -67.0];
+  private static readonly INITIAL_ZOOM = 8;
 
   constructor() {
     // Rebuild markers whenever the data changes.
@@ -96,9 +94,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       zoomControl: true,
       attributionControl: true,
       preferCanvas: true,
-      // Zoom libre (in/out), pero con un piso que evita alejarse al mundo
-      // entero → el mapa sigue siendo ligero. El paneo se acota a la región.
-      minZoom: 5,
+      // El zoom inicial es el mínimo: no se puede alejar (sin huecos vacíos),
+      // solo acercar. El paneo se acota a la región (Venezuela + Caribe).
+      minZoom: CrisisMapComponent.INITIAL_ZOOM,
       maxZoom: 19,
       maxBounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
       maxBoundsViscosity: 1.0,
@@ -114,6 +112,11 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
     // this.drawHighlightZones();
     this.frameVenezuela();
+
+    // Movimiento solo al hacer zoom-in: en el zoom mínimo el mapa queda fijo;
+    // al acercar se habilita el arrastre. (Re-evaluado en cada cambio de zoom.)
+    this.map.on('zoomend', () => this.syncDragByZoom());
+    this.syncDragByZoom();
 
     this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes());
 
@@ -131,9 +134,28 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Initial framing: Venezuela centered --------
   private frameVenezuela(): void {
-    // Encaja el recuadro Venezuela + Caribe en el rectángulo de la pantalla
-    // (se adapta a la resolución). El zoom queda libre (in/out).
-    this.map.fitBounds(L.latLngBounds(CrisisMapComponent.FRAME_BOUNDS));
+    // Vista inicial fija (centro + zoom). A este zoom (el mínimo) la vista
+    // siempre cabe dentro de la región con tiles → llena la pantalla sin huecos.
+    this.map.setView(
+      CrisisMapComponent.INITIAL_CENTER,
+      CrisisMapComponent.INITIAL_ZOOM,
+      { animate: false },
+    );
+  }
+
+  /**
+   * Habilita el arrastre solo cuando hay zoom-in respecto al zoom mínimo. En el
+   * zoom inicial/mínimo el mapa queda fijo (sin paneo).
+   */
+  private syncDragByZoom(): void {
+    const atFloor = this.map.getZoom() <= this.map.getMinZoom();
+    if (atFloor) {
+      this.map.dragging.disable();
+      this.map.keyboard.disable();
+    } else {
+      this.map.dragging.enable();
+      this.map.keyboard.enable();
+    }
   }
 
   // --- Basemap (swaps with the theme) ---------------------------------------

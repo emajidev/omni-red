@@ -45,6 +45,13 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "allowedHosts": [
+              "omni-red-frontend-production.up.railway.app",
+              "localhost",
+              "127.0.0.1"
+            ]
+          },
           "configurations": {
             "production": { "buildTarget": "omnired:build:production" },
             "development": { "buildTarget": "omnired:build:development" }

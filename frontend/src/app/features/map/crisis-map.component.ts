@@ -48,6 +48,19 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
   };
 
+  // Recuadro Venezuela + Caribe (SW, NE). Limita la carga de tiles y el paneo a
+  // esta región: el mapa nunca pide tiles del resto del mundo → más ligero y
+  // rápido. Incluye mar Caribe al norte para que Venezuela quede centrada y la
+  // vista llene la pantalla (sin huecos grises).
+  private static readonly VE_BOUNDS: [[number, number], [number, number]] = [
+    [-2.0, -75.0],  // SW (margen sur)
+    [17.0, -58.0],  // NE (mar Caribe al norte)
+  ];
+
+  // Zoom inicial y mínimo: vista cercana que llena la pantalla, sin permitir
+  // alejarse al mundo entero.
+  private static readonly MIN_ZOOM = 6;
+
   constructor() {
     // Rebuild markers whenever the data changes.
     effect(() => {
@@ -77,10 +90,16 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    const veBounds = L.latLngBounds(CrisisMapComponent.VE_BOUNDS);
     this.map = L.map(this.mapEl().nativeElement, {
       zoomControl: true,
       attributionControl: true,
-      preferCanvas: true
+      preferCanvas: true,
+      // Restringe el mapa a Venezuela: no se puede alejar al mundo (minZoom)
+      // ni desplazarse fuera del país (maxBounds) → solo se cargan sus tiles.
+      minZoom: CrisisMapComponent.MIN_ZOOM,
+      maxBounds: veBounds,
+      maxBoundsViscosity: 1.0,
     });
 
     // Basemap matches the active theme (light Voyager / dark Dark Matter).
@@ -110,8 +129,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Initial framing: Venezuela centered --------
   private frameVenezuela(): void {
-    // Center roughly on Venezuela
-    this.map.setView([7.5, -66.0], 6);
+    // Vista cercana centrada en Venezuela, con algo de mar Caribe al norte;
+    // llena la pantalla en el zoom inicial.
+    this.map.setView([8.2, -66.3], CrisisMapComponent.MIN_ZOOM);
   }
 
   // --- Basemap (swaps with the theme) ---------------------------------------
@@ -120,7 +140,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.tileLayer = L.tileLayer(CrisisMapComponent.TILES[theme], {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
       subdomains: 'abcd',
-      maxZoom: 19
+      minZoom: CrisisMapComponent.MIN_ZOOM,
+      maxZoom: 19,
+      // No solicita tiles fuera de Venezuela.
+      bounds: L.latLngBounds(CrisisMapComponent.VE_BOUNDS),
     });
     this.tileLayer.addTo(this.map);
     // Keep the basemap below markers/popups.

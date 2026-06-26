@@ -41,10 +41,10 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
   imports: [ReactiveFormsModule, BottomSheetComponent],
   template: `
     <app-bottom-sheet [title]="isSafe() ? 'Reportar persona a salvo' : 'Reportar desaparecido'"
-                      subtitle="Los datos se validan también en el servidor"
-                      [icon]="isSafe() ? 'safe' : 'alert'"
-                      [accentBg]="isSafe() ? 'bg-safebg text-safe' : 'bg-alertbg text-alert'"
-                      (close)="ui.close()">
+                       subtitle="Los datos se validan también en el servidor"
+                       [icon]="isSafe() ? 'safe' : 'alert'"
+                       [accentBg]="isSafe() ? 'bg-safebg text-safe' : 'bg-alertbg text-alert'"
+                       (close)="ui.close()">
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
 
@@ -68,7 +68,7 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
         <label class="block">
           <span class="text-xs font-semibold text-textmuted ml-1">Nombre completo *</span>
           <input formControlName="nombre" type="text" autocomplete="off"
-                 class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
+                 class="mt-1.5 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info transition" />
           @if (invalid('nombre')) { <span class="text-[11px] font-semibold text-alert ml-1 mt-1 block">Indica un nombre (mínimo 3 caracteres).</span> }
         </label>
 
@@ -77,13 +77,13 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
           <label class="block">
             <span class="text-xs font-semibold text-textmuted ml-1">Cédula</span>
             <input formControlName="cedula" type="text" placeholder="V-12.345.678"
-                   class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info placeholder:text-textmuted transition" />
+                   class="mt-1.5 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info placeholder:text-textmuted transition" />
             @if (invalid('cedula')) { <span class="text-[11px] font-semibold text-alert ml-1 mt-1 block">Formato no válido.</span> }
           </label>
           <label class="block">
             <span class="text-xs font-semibold text-textmuted ml-1">Edad</span>
             <input formControlName="edad" type="number" min="0" max="120"
-                   class="mt-1.5 w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
+                   class="mt-1.5 w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info transition" />
           </label>
         </div>
 
@@ -94,14 +94,14 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
             <input formControlName="place" type="text" placeholder="Escribe para buscar (Ej: Caracas)..." autocomplete="off"
                    (focus)="showSuggestions.set(true)"
                    (blur)="hideSuggestionsWithDelay()"
-                   class="w-full rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info transition" />
+                   class="w-full rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info transition" />
             <button type="button" (click)="useCurrentLocation()" class="rounded-xl bg-appbg px-3 py-3 text-sm font-medium ring-1 ring-borderlight shadow-inner hover:bg-borderlight transition" title="Usar ubicación actual">📍</button>
           </div>
           
           @if (showSuggestions() && filteredPlaces().length > 0) {
             <ul class="absolute z-10 w-[calc(100%-3.5rem)] mt-1 max-h-48 overflow-auto rounded-xl bg-white ring-1 ring-black/5 shadow-xl animate-fade-in divide-y divide-black/5">
               @for (pl of filteredPlaces(); track pl.name) {
-                <li (click)="selectPlace(pl.name)" 
+                <li (mousedown)="selectPlace(pl.name); $event.preventDefault()" 
                     class="px-4 py-3 text-sm cursor-pointer hover:bg-slate-50 transition font-medium text-slate-700 active:bg-slate-100">
                   {{ pl.name }}
                 </li>
@@ -115,7 +115,25 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
           <span class="text-xs font-semibold text-textmuted ml-1">Detalle / señas</span>
           <textarea formControlName="detalle" rows="2" maxlength="500"
                     placeholder="Ropa, condición médica, contexto…"
-                    class="mt-1.5 w-full resize-none rounded-xl bg-appbg px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-inner outline-none focus:ring-info placeholder:text-textmuted transition"></textarea>
+                    class="mt-1.5 w-full resize-none rounded-xl bg-white px-4 py-3 text-sm font-medium text-textmain ring-1 ring-borderlight shadow-sm outline-none focus:ring-info placeholder:text-textmuted transition"></textarea>
+        </label>
+
+        <!-- Photo Upload -->
+        <label class="block">
+          <span class="text-xs font-semibold text-textmuted ml-1 block mb-1.5">Foto de la persona (Opcional)</span>
+          <div class="flex items-center gap-3">
+            @if (fotoPreview()) {
+              <div class="relative h-16 w-16 shrink-0 rounded-xl overflow-hidden ring-1 ring-borderlight shadow-sm">
+                <img [src]="fotoPreview()" class="h-full w-full object-cover" />
+                <button type="button" (click)="removePhoto()" class="absolute top-1 right-1 h-5 w-5 bg-black/50 text-white rounded-full text-xs font-bold flex items-center justify-center hover:bg-black/70">✕</button>
+              </div>
+            }
+            <label class="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-borderlight bg-white px-4 py-3 text-sm font-medium text-textmuted hover:bg-slate-50 transition shadow-sm">
+              <span class="text-lg">📷</span> 
+              <span>{{ fotoPreview() ? 'Cambiar foto' : 'Seleccionar imagen' }}</span>
+              <input type="file" accept="image/*" class="hidden" (change)="onPhotoPick($event)" />
+            </label>
+          </div>
         </label>
 
         <button type="submit" [disabled]="form.invalid || saving()"
@@ -142,6 +160,7 @@ export class ReportSheetComponent implements OnInit {
   isSafe = () => this.status() === 'a_salvo';
   
   readonly showSuggestions = signal(false);
+  readonly fotoPreview = signal<string | null>(null);
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -157,6 +176,19 @@ export class ReportSheetComponent implements OnInit {
 
   setStatus(s: PersonStatus): void {
     this.status.set(s);
+  }
+
+  onPhotoPick(e: Event): void {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => this.fotoPreview.set(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removePhoto(): void {
+    this.fotoPreview.set(null);
   }
 
   filteredPlaces() {
@@ -226,7 +258,8 @@ export class ReportSheetComponent implements OnInit {
         fuente: 'web',
         edad: v.edad ?? null,
         detalle: v.detalle?.trim() || null,
-        reportado_por: 'autorreporte'
+        reportado_por: 'autorreporte',
+        foto_url: this.fotoPreview()
       });
 
       if (res.unificado) {

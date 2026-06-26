@@ -16,55 +16,49 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, BottomSheetComponent, CountUpDirective],
   template: `
-    <app-bottom-sheet title="Buscar personas" subtitle="Filtra por nombre, cédula o ubicación"
-                      icon="search" accentBg="bg-infobg text-info" (close)="ui.close()">
+    <app-bottom-sheet [hideHeader]="true" (close)="ui.close()">
 
-      <!-- Metrics -->
-      <div class="grid grid-cols-3 gap-2">
-        <div class="rounded-xl bg-appbg p-3 ring-1 ring-borderlight shadow-sm">
-          <div class="text-2xl font-extrabold text-textmain animate-count-pop" [appCountUp]="m().total_reportados"></div>
-          <div class="text-[11px] font-semibold text-textmuted">Reportados</div>
-        </div>
-        <div class="rounded-xl bg-alertbg p-3 ring-1 ring-alert/20 shadow-sm">
-          <div class="text-2xl font-extrabold text-alert animate-count-pop" [appCountUp]="m().desaparecidos"></div>
-          <div class="text-[11px] font-semibold text-alert">Desaparecidos</div>
-        </div>
-        <div class="rounded-xl bg-safebg p-3 ring-1 ring-safe/20 shadow-sm">
-          <div class="text-2xl font-extrabold text-safe animate-count-pop" [appCountUp]="m().localizados"></div>
-          <div class="text-[11px] font-semibold text-safe">A salvo</div>
-        </div>
-      </div>
-
-      <div class="mt-3 flex items-center gap-2 rounded-xl bg-warnbg px-4 py-2.5 ring-1 ring-warn/30 shadow-sm">
-        <span class="text-warn text-lg">⚠️</span>
-        <span class="text-sm font-bold text-warn"><b [appCountUp]="m().criticos"></b> casos críticos</span>
-        <span class="ml-auto text-[11px] font-medium text-warn/80">(2+ fuentes)</span>
-      </div>
-
-      <!-- Search box -->
-      <div class="sticky top-0 z-10 -mx-1 mt-4 bg-surface pb-3 pt-1">
-        <div class="flex items-center gap-2 rounded-xl bg-appbg px-4 shadow-sm ring-1 ring-borderlight focus-within:ring-info transition">
-          <span class="text-textmuted">🔎</span>
+      <!-- Custom Search Header -->
+      <div class="flex items-center gap-2 mb-3">
+        <div class="flex flex-1 items-center gap-2 rounded-2xl bg-appbg px-4 ring-1 ring-black/5 focus-within:ring-black/10 transition">
+          <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <input [ngModel]="ui.query()" (ngModelChange)="ui.query.set($event)"
                  type="search" inputmode="search" autocomplete="off"
                  placeholder="Ej: María, V-12.345.678, Catia…"
-                 class="w-full bg-transparent py-3 text-sm font-medium text-textmain placeholder:text-textmuted outline-none" />
+                 class="w-full bg-transparent py-3.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 outline-none" />
           @if (ui.query()) {
-            <button (click)="ui.query.set('')" class="text-textmuted hover:text-textmain font-bold">✕</button>
+            <button (click)="ui.query.set('')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
           }
         </div>
-        <p class="mt-2 px-2 text-[11px] font-semibold text-textmuted">{{ results().length }} resultado(s)</p>
+        <button type="button" (click)="ui.close()" class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-appbg text-slate-500 hover:bg-black/5 transition ring-1 ring-black/5">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
+
+      <!-- Minimalist Metrics -->
+      <div class="flex items-center justify-between px-1 text-[11px] font-semibold text-textmuted mb-4 pb-4 border-b border-black/5">
+        <span><b class="text-textmain font-extrabold text-sm" [appCountUp]="m().total_reportados"></b> Reg.</span>
+        <span><b class="text-red-500 font-extrabold text-sm" [appCountUp]="m().desaparecidos"></b> Falta</span>
+        <span><b class="text-green-600 font-extrabold text-sm" [appCountUp]="m().localizados"></b> Salvo</span>
+        <span class="flex items-center gap-1"><b class="text-orange-500 font-extrabold text-sm" [appCountUp]="m().criticos"></b> Críticos</span>
+      </div>
+
+      <div class="px-1 mb-2 text-[11px] font-semibold text-textmuted">{{ results().length }} resultado(s)</div>
 
       <!-- Results -->
       <ul class="space-y-3">
         @for (p of results(); track p.id) {
           <li>
             <button (click)="focus(p)"
-                    class="flex w-full items-start gap-3 rounded-xl bg-surface p-4 text-left shadow-sm
+                    class="flex w-full items-start gap-3 rounded-xl bg-white p-4 text-left shadow-sm
                            ring-1 ring-borderlight hover:bg-appbg active:scale-[.99] transition fade-in">
               <span class="mt-1 h-3 w-3 shrink-0 rounded-full shadow-sm"
                     [style.background]="p.estado === 'a_salvo' ? '#38A169' : p.estado === 'desaparecido' ? '#E53E3E' : '#718096'"></span>
+              @if (p.foto_url) {
+                <div class="h-12 w-12 shrink-0 rounded-lg overflow-hidden ring-1 ring-black/5 shadow-sm">
+                  <img [src]="p.foto_url" class="h-full w-full object-cover" />
+                </div>
+              }
               <span class="min-w-0 flex-1">
                 <span class="flex items-center gap-2">
                   <span class="truncate text-sm font-bold text-textmain">{{ p.nombre }}</span>
@@ -78,7 +72,7 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
           </li>
         } @empty {
           <li class="rounded-xl bg-appbg p-8 text-center text-sm font-medium text-textmuted ring-1 ring-borderlight shadow-inner">
-            Sin coincidencias para “{{ ui.query() }}”.
+            Sin coincidencias para "{{ ui.query() }}".
           </li>
         }
       </ul>

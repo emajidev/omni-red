@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit, signal, computed } from '@angular/core';
 
 // ... other imports remain the same ...
 import { FormsModule } from '@angular/forms';
@@ -41,93 +41,88 @@ declare var gsap: any;
     <main class="relative h-[100dvh] w-full overflow-hidden">
       <app-crisis-map></app-crisis-map>
 
-      <!-- ===== Top overlay: brand + prominent search + live metric chips ===== -->
-      <header class="pointer-events-none absolute inset-x-0 top-0 z-[500] p-4 pt-[max(1rem,env(safe-area-inset-top))]">
-        <div class="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-3 gs-header">
-          <div class="flex items-center gap-2 animate-stagger-1">
-            <div class="flex items-center gap-2 rounded-2xl bg-white/80 backdrop-blur-xl px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.06)] border border-black/5">
-              <span class="text-lg font-bold tracking-tight text-black">SomosUno</span>
-              <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    [class]="supa.isLive ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'">
-                {{ supa.isLive ? 'LIVE' : 'DEMO' }}
-              </span>
-            </div>
-
-            <!-- Prominent central search bar -->
-            <button (click)="ui.open('search')"
-                    class="flex flex-1 items-center gap-2 rounded-2xl bg-white/80 backdrop-blur-xl px-4 py-3 text-left shadow-[0_8px_32px_rgba(0,0,0,0.06)] border border-black/5 hover:border-black/10 transition">
-              <span class="text-slate-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </span>
-              <span class="truncate text-sm font-medium text-slate-500">{{ ui.query() || 'Buscar nombre, zona...' }}</span>
-            </button>
+      <!-- ===== Top overlay: centered brand + live metric chips in black glassmorphism container ===== -->
+      <header class="pointer-events-none absolute inset-x-0 top-0 z-[500] p-3 pt-[max(.75rem,env(safe-area-inset-top))]">
+        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl bg-black/60 backdrop-blur-xl p-3 border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-stagger-1 gs-header">
+          <!-- Centered Brand -->
+          <div class="flex items-center gap-2">
+            <span class="text-base font-extrabold tracking-tight text-white">SomosUno</span>
+            <span style="font-size:1.1rem;line-height:1;font-family:Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">&#x1F1FB;&#x1F1EA;</span>
           </div>
 
-          <!-- Live metric chips -->
-          <div class="flex gap-2 overflow-x-auto pb-1 text-xs font-medium hide-scrollbar animate-stagger-2">
-            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-white/80 backdrop-blur-md px-3 py-1.5 text-black shadow-sm"><b [appCountUp]="data.metrics().total_reportados"></b> reportados</span>
-            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-red-50 backdrop-blur-md px-3 py-1.5 text-red-600 shadow-sm"><b [appCountUp]="data.metrics().desaparecidos"></b> desaparecidos</span>
-            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-green-50 backdrop-blur-md px-3 py-1.5 text-green-600 shadow-sm"><b [appCountUp]="data.metrics().localizados"></b> a salvo</span>
-            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-orange-50 backdrop-blur-md px-3 py-1.5 text-orange-600 shadow-sm"><b [appCountUp]="data.metrics().criticos"></b> críticos</span>
-            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-blue-50 backdrop-blur-md px-3 py-1.5 text-blue-600 shadow-sm"><b [appCountUp]="data.metrics().centros_activos"></b> acopio</span>
+          <!-- Centered Live metric chips: background matching their status, text white/bright -->
+          <div class="flex flex-wrap justify-center gap-1.5 text-[11px] font-semibold">
+            <span class="flex items-center gap-1 rounded-full bg-slate-800/85 border border-slate-700/50 px-2.5 py-1 text-slate-100 shadow-sm"><b [appCountUp]="data.metrics().total_reportados"></b>&nbsp;total</span>
+            <span class="flex items-center gap-1 rounded-full bg-red-600/85 border border-red-500/50 px-2.5 py-1 text-white shadow-sm"><b [appCountUp]="data.metrics().desaparecidos"></b>&nbsp;desap.</span>
+            <span class="flex items-center gap-1 rounded-full bg-green-600/85 border border-green-500/50 px-2.5 py-1 text-white shadow-sm"><b [appCountUp]="data.metrics().localizados"></b>&nbsp;salvo</span>
+            <span class="flex items-center gap-1 rounded-full bg-orange-600/85 border border-orange-500/50 px-2.5 py-1 text-white shadow-sm"><b [appCountUp]="data.metrics().criticos"></b>&nbsp;críticos</span>
+            <span class="flex items-center gap-1 rounded-full bg-blue-600/85 border border-blue-500/50 px-2.5 py-1 text-white shadow-sm"><b [appCountUp]="data.metrics().centros_activos"></b>&nbsp;acopio</span>
           </div>
         </div>
       </header>
 
-      <!-- ===== Right side panel (sheet) ===== -->
-      @if (ui.sheet() === 'search') { <app-search-sheet class="gs-sheet"></app-search-sheet> }
-      @if (ui.sheet() === 'report') { <app-report-sheet class="gs-sheet"></app-report-sheet> }
-      @if (ui.sheet() === 'ocr')    { <app-ocr-sheet class="gs-sheet"></app-ocr-sheet> }
-      @if (ui.sheet() === 'centers'){ <app-centers-sheet class="gs-sheet"></app-centers-sheet> }
+      <!-- ===== Floating Recent Bubbles — desktop only, hidden when sheet open (relocated to left) ===== -->
+      @if (!ui.sheet()) {
+        <div class="pointer-events-none absolute left-4 top-1/2 z-[450] hidden sm:flex -translate-y-1/2 flex-col gap-4 overflow-visible h-[200px] justify-end pb-8">
+          @for (person of recentPeople(); track person.id; let i = $index) {
+            <div class="rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 shadow-lg border border-black/5 flex items-center gap-2 animate-[float-up_10s_ease-in-out_infinite] opacity-0"
+                 [style.animation-delay]="(i * 2) + 's'">
+              <span class="h-1.5 w-1.5 rounded-full" [class]="person.estado === 'a_salvo' ? 'bg-green-500' : 'bg-red-500'"></span>
+              <span class="text-[10px] font-bold text-slate-700 whitespace-nowrap max-w-[100px] truncate">{{ person.nombre }}</span>
+            </div>
+          }
+        </div>
+      }
 
-      <!-- ===== Legend (only visible when map is main view) ===== -->
-      <div class="absolute bottom-[100px] right-4 z-[400] flex flex-col gap-2 rounded-2xl bg-white/80 p-3 text-[10px] font-medium shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-md border border-black/5 gs-legend"
-           [class.hidden]="ui.sheet()">
-        <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-alert"></span>Desaparecido</div>
-        <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-safe"></span>A Salvo</div>
-        <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-info"></span>Acopio</div>
-      </div>
+      <!-- ===== Legend — desktop only, above the nav bar ===== -->
+      @if (!ui.sheet()) {
+        <div class="absolute bottom-[88px] right-3 z-[400] hidden sm:flex flex-col gap-1.5 rounded-2xl bg-white/90 backdrop-blur-md p-2.5 text-[10px] font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.10)] border border-black/5">
+          <div class="flex items-center gap-2 text-slate-700"><span class="h-2.5 w-2.5 rounded-full bg-alert"></span>Desaparecido</div>
+          <div class="flex items-center gap-2 text-slate-700"><span class="h-2.5 w-2.5 rounded-full bg-safe"></span>A Salvo</div>
+          <div class="flex items-center gap-2 text-slate-700"><span class="h-2.5 w-2.5 rounded-full bg-info"></span>Acopio</div>
+        </div>
+      }
 
-      <!-- ===== Light Glassmorphic Bottom Navigation (Apple Style) ===== -->
-      <nav class="absolute inset-x-0 bottom-6 z-[600] flex justify-center px-4 pointer-events-none gs-nav">
-        <!-- Glassmorphic Container -->
-        <div class="pointer-events-auto flex w-full max-w-[420px] items-center justify-between rounded-[2.5rem] bg-white/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-2xl border border-black/5 animate-stagger-3">
+      <!-- ===== Black Glassmorphism Bottom Navigation with Shadow ===== -->
+      <nav class="absolute inset-x-0 bottom-0 z-[600] flex justify-center px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pointer-events-none gs-nav">
+        <!-- Dark Glass Container -->
+        <div class="pointer-events-auto flex w-full max-w-[460px] items-center justify-between rounded-[2rem] bg-black/60 backdrop-blur-xl px-2 py-1.5 shadow-[0_-2px_0_rgba(255,255,255,0.05),0_8px_32px_rgba(0,0,0,0.4)] border border-white/10 animate-stagger-3">
           
-          <!-- Item 1: Buscar (Search) -->
-          <button (click)="ui.open('search')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-4"
-                  [class]="ui.sheet() === 'search' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <!-- Item 1: Buscar -->
+          <button (click)="ui.open('search')" class="flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 h-14 rounded-[1.5rem] transition-all duration-200 active:scale-95"
+                  [class]="ui.sheet() === 'search' ? 'bg-white text-slate-950 shadow-inner' : 'text-slate-400 hover:text-white hover:bg-white/10'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span class="text-xs font-semibold tracking-wide">Buscar</span>
+            <span class="text-[10px] font-bold tracking-wide">Buscar</span>
           </button>
           
-          <!-- Item 2: Reportar (RED) -->
-          <button (click)="ui.openReport('desaparecido')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
-                  [class]="ui.sheet() === 'report' ? 'bg-red-500 text-white shadow-md' : 'text-red-500 hover:text-red-600 hover:bg-red-50'">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <!-- Item 2: Reportar — red accent -->
+          <button (click)="ui.openReport('desaparecido')" class="flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 h-14 rounded-[1.5rem] transition-all duration-200 active:scale-95"
+                  [class]="ui.sheet() === 'report' ? 'bg-gradient-to-tr from-red-600 to-red-400 text-white shadow-[0_4px_16px_rgba(220,38,38,0.4)]' : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span class="text-xs font-semibold tracking-wide">Reportar</span>
+            <span class="text-[10px] font-bold tracking-wide">Reportar</span>
           </button>
           
           <!-- Item 3: Escanear -->
-          <button (click)="ui.open('ocr')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
-                  [class]="ui.sheet() === 'ocr' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <button (click)="ui.open('ocr')" class="flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 h-14 rounded-[1.5rem] transition-all duration-200 active:scale-95"
+                  [class]="ui.sheet() === 'ocr' ? 'bg-white text-slate-950 shadow-inner' : 'text-slate-400 hover:text-white hover:bg-white/10'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span class="text-xs font-semibold tracking-wide">Escanear</span>
+            <span class="text-[10px] font-bold tracking-wide">Escanear</span>
           </button>
           
           <!-- Item 4: Acopio -->
-          <button (click)="ui.open('centers')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
-                  [class]="ui.sheet() === 'centers' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <button (click)="ui.open('centers')" class="flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 h-14 rounded-[1.5rem] transition-all duration-200 active:scale-95"
+                  [class]="ui.sheet() === 'centers' ? 'bg-white text-slate-950 shadow-inner' : 'text-slate-400 hover:text-white hover:bg-white/10'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            <span class="text-xs font-semibold tracking-wide">Acopio</span>
+            <span class="text-[10px] font-bold tracking-wide">Acopio</span>
           </button>
           
         </div>
@@ -180,6 +175,10 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   showSplash = signal(true);
   fadeSplash = signal(false);
+
+  recentPeople = computed(() => {
+    return this.data.people().slice(0, 5);
+  });
 
   ngOnInit(): void {
     this.data.loadAll();

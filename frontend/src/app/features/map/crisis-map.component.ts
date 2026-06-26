@@ -78,7 +78,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.peopleLayer = L.layerGroup().addTo(this.map);
     this.centersLayer = L.layerGroup().addTo(this.map);
 
-    this.drawHighlightZones();
+    // this.drawHighlightZones();
     this.frameVenezuela();
 
     this.renderMarkers(this.data.people(), this.data.centers());
@@ -155,8 +155,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   // --- Popups (content escaped: defends against XSS in live data) -----------
   private personPopup(p: PersonReport): string {
     const dot = p.estado === 'a_salvo' ? '#38a169' : p.estado === 'desaparecido' ? '#e53e3e' : '#718096';
+    const imgHtml = p.foto_url ? `<img src="${this.esc(p.foto_url)}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.1)" />` : '';
     return `
       <div style="min-width:200px">
+        ${imgHtml}
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
           <span style="width:9px;height:9px;border-radius:50%;background:${dot};display:inline-block"></span>
           <strong style="font-size:14px;color:#1A202C">${this.esc(p.nombre)}</strong>

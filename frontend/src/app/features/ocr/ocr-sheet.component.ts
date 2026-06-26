@@ -28,14 +28,14 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
         <!-- Dropzone -->
         <label (dragover)="onDragOver($event)" (dragleave)="over.set(false)" (drop)="onDrop($event)"
                class="dropzone flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl
-                      border-2 border-dashed border-borderlight bg-appbg/50 px-6 py-10 text-center transition"
+                      border-2 border-dashed border-white/20 bg-white/10 px-6 py-10 text-center transition shadow-sm hover:bg-white/15"
                [class.dropzone--over]="over()">
           <span class="text-4xl">🗂️</span>
-          <span class="text-sm font-bold text-textmain">Arrastra una imagen aquí</span>
-          <span class="text-xs font-medium text-textmuted">o toca para seleccionar (JPG, PNG, PDF)</span>
+          <span class="text-sm font-bold text-white">Arrastra una imagen aquí</span>
+          <span class="text-xs font-medium text-white/60">o toca para seleccionar (JPG, PNG, PDF)</span>
           <input type="file" accept="image/*,application/pdf" class="hidden" (change)="onPick($event)" />
         </label>
-        <div class="mt-4 rounded-xl bg-appbg/70 p-3 text-[11px] font-medium text-textmuted ring-1 ring-borderlight shadow-sm">
+        <div class="mt-4 rounded-xl bg-white/10 p-3 text-[11px] font-medium text-white/60 ring-1 ring-white/10 shadow-sm">
           🔐 La imagen se sube al bucket privado <code>listas_sismo</code> con URL firmada;
           el OCR y la desduplicación corren en el servidor.
         </div>
@@ -44,24 +44,24 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
       @if (stage() !== 'idle') {
         <!-- Pipeline -->
         <div class="space-y-4">
-          <div class="flex items-center gap-2 text-sm font-bold text-textmain bg-appbg p-3 rounded-xl ring-1 ring-borderlight">
+          <div class="flex items-center gap-2 text-sm font-bold text-white bg-white/10 shadow-sm p-3 rounded-xl ring-1 ring-white/10">
             <span>🖼️</span><span class="truncate">{{ fileName() }}</span>
           </div>
 
           <!-- 1. Upload -->
-          <div class="bg-surface p-4 rounded-xl ring-1 ring-borderlight shadow-sm">
-            <div class="mb-2 flex justify-between text-[11px] font-bold {{ stage()==='uploading' ? 'text-info' : 'text-textmuted' }}">
+          <div class="bg-white/10 p-4 rounded-xl ring-1 ring-white/10 shadow-sm">
+            <div class="mb-2 flex justify-between text-[11px] font-bold {{ stage()==='uploading' ? 'text-info' : 'text-white/60' }}">
               <span>1 · Subiendo a Supabase Storage</span><span>{{ progress() }}%</span>
             </div>
-            <div class="h-2.5 overflow-hidden rounded-full bg-borderlight shadow-inner">
+            <div class="h-2.5 overflow-hidden rounded-full bg-white/10 shadow-inner">
               <div class="h-full rounded-full bg-info transition-[width] duration-150" [style.width.%]="progress()"></div>
             </div>
           </div>
 
           <!-- 2. OCR scan -->
           @if (step() >= 2) {
-            <div class="bg-surface p-4 rounded-xl ring-1 ring-borderlight shadow-sm mt-3">
-              <div class="mb-2 text-[11px] font-bold {{ stage()==='scanning' ? 'text-info' : 'text-textmuted' }}">2 · Escaneo OCR</div>
+            <div class="bg-white/10 p-4 rounded-xl ring-1 ring-white/10 shadow-sm mt-3">
+              <div class="mb-2 text-[11px] font-bold {{ stage()==='scanning' ? 'text-info' : 'text-white/60' }}">2 · Escaneo OCR</div>
               <div class="relative overflow-hidden rounded-xl bg-primary p-4 shadow-inner">
                 @if (stage() === 'scanning') { <div class="scanline"></div> }
                 <pre class="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-emerald-400 font-medium">{{ scanText() }}@if (stage()==='scanning') {<span class="animate-pulse">▌</span>}</pre>
@@ -72,15 +72,14 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
           <!-- 3. Dedup -->
           @if (step() >= 3) {
             <div class="rounded-xl p-4 ring-1 shadow-sm mt-3"
-                 [class]="dupCount() ? 'bg-warnbg ring-warn/30' : 'bg-safebg ring-safe/30'">
-              <div class="flex items-center gap-2 text-sm font-bold"
-                   [class]="dupCount() ? 'text-warn' : 'text-safe'">
+                 [class]="dupCount() ? 'bg-orange-950/40 ring-warn/30 text-warn' : 'bg-green-950/40 ring-safe/30 text-safe'">
+              <div class="flex items-center gap-2 text-sm font-bold">
                 <span>{{ dupCount() ? '🧠' : '✅' }}</span>
                 <span>Desduplicación por IA</span>
-                @if (stage()==='deduping') { <span class="ml-auto text-[11px] font-medium text-textmuted animate-pulse">analizando…</span> }
+                @if (stage()==='deduping') { <span class="ml-auto text-[11px] font-medium text-white/40 animate-pulse">analizando…</span> }
               </div>
               @if (step() >= 4) {
-                <p class="mt-2 text-xs font-semibold" [class]="dupCount() ? 'text-warn/90' : 'text-safe/90'">
+                <p class="mt-2 text-xs font-semibold text-white/80">
                   {{ dupCount() }} de {{ records().length }} ya existían en la base
                   → se unificarán (no se duplica el pin en el mapa).
                 </p>
@@ -90,16 +89,16 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
 
           <!-- 4. Extracted table -->
           @if (stage() === 'review') {
-            <div class="overflow-hidden rounded-xl ring-1 ring-borderlight shadow-sm mt-4">
+            <div class="overflow-hidden rounded-xl ring-1 ring-white/10 shadow-sm mt-4">
               <table class="w-full text-left text-[11px]">
-                <thead class="bg-appbg text-textmuted font-semibold">
+                <thead class="bg-white/10 text-white/60 font-semibold">
                   <tr><th class="px-3 py-2.5">Nombre</th><th class="px-3 py-2.5">Cédula</th><th class="px-3 py-2.5">Estado</th><th class="px-3 py-2.5">IA</th></tr>
                 </thead>
-                <tbody class="divide-y divide-borderlight bg-surface">
+                <tbody class="divide-y divide-white/5 bg-white/5 text-white">
                   @for (r of records(); track r.cedula) {
-                    <tr class="hover:bg-appbg/50 transition">
-                      <td class="px-3 py-3 font-semibold text-textmain">{{ r.nombre }}</td>
-                      <td class="px-3 py-3 font-medium text-textmuted">{{ r.cedula }}</td>
+                    <tr class="hover:bg-white/5 transition">
+                      <td class="px-3 py-3 font-semibold text-white">{{ r.nombre }}</td>
+                      <td class="px-3 py-3 font-medium text-white/60">{{ r.cedula }}</td>
                       <td class="px-3 py-3"><span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="chip(r.estado)">{{ label(r.estado) }}</span></td>
                       <td class="px-3 py-3 font-bold">
                         @if (r.isDuplicate) { <span class="text-warn" title="Duplicado: se unificará">⟳ dup</span> }
@@ -112,7 +111,7 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
             </div>
 
             <div class="flex gap-3 mt-4">
-              <button (click)="reset()" class="flex-1 rounded-2xl bg-appbg py-3 text-sm font-bold text-textmuted ring-1 ring-borderlight hover:bg-borderlight transition">Descartar</button>
+              <button (click)="reset()" class="flex-1 rounded-2xl bg-white/10 py-3 text-sm font-bold text-white/80 ring-1 ring-white/10 hover:bg-white/20 transition">Descartar</button>
               <button (click)="save()" [disabled]="saving()"
                       class="flex-1 rounded-2xl bg-info py-3 text-sm font-bold text-white shadow-md hover:bg-info/90 disabled:opacity-50 transition">
                 {{ saving() ? 'Guardando…' : 'Guardar en base' }}

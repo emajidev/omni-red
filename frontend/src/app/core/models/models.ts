@@ -32,6 +32,7 @@ export interface PersonReport {
   reportado_por?: string | null;
   lista_origen_id?: string | null;
   veces_reportado: number;
+  foto_url?: string | null;
   created_at: string; // ISO
 }
 
@@ -83,6 +84,7 @@ export interface NewReport {
   telefono_contacto?: string | null;
   detalle?: string | null;
   reportado_por?: string | null;
+  foto_url?: string | null;
 }
 
 /** Result of reportar_persona: whether it merged (deduplicated). */

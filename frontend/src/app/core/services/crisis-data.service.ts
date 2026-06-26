@@ -129,7 +129,8 @@ export class CrisisDataService {
         estado: input.estado === 'a_salvo' ? 'a_salvo' : existing.estado,
         ubicacion: input.ubicacion || existing.ubicacion,
         lat: input.lat, lng: input.lng,
-        detalle: input.detalle || existing.detalle
+        detalle: input.detalle || existing.detalle,
+        foto_url: input.foto_url || existing.foto_url
       };
       const copy = [...current];
       copy[idx] = merged;
@@ -150,6 +151,7 @@ export class CrisisDataService {
       detalle: input.detalle ?? null,
       reportado_por: input.reportado_por ?? 'autorreporte',
       veces_reportado: 1,
+      foto_url: input.foto_url ?? null,
       created_at: new Date().toISOString()
     };
     this.people.set([report, ...current]);

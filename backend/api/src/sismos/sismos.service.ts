@@ -75,8 +75,10 @@ export class SismosService implements OnApplicationBootstrap, OnModuleDestroy {
     try {
       await this.syncFromUsgs();
     } catch (err) {
-      this.logger.error(
-        `Fallo el auto-sync con USGS: ${err instanceof Error ? err.message : err}`,
+      // Fallo transitorio (red/IPv6/timeout): no es crítico, se reintenta en el
+      // siguiente ciclo. Se registra como warn para no ensuciar con ERROR.
+      this.logger.warn(
+        `Auto-sync con USGS omitido (se reintenta): ${err instanceof Error ? err.message : err}`,
       );
     } finally {
       this.syncing = false;
@@ -112,7 +114,11 @@ export class SismosService implements OnApplicationBootstrap, OnModuleDestroy {
       `&minlongitude=${bb.minlng}&maxlongitude=${bb.maxlng}` +
       `&orderby=time`;
 
-    const res = await fetch(url, { headers: { Accept: 'application/geojson' } });
+    const res = await fetch(url, {
+      headers: { Accept: 'application/geojson' },
+      // Corta la espera si la red/IPv6 no responde (evita ciclos colgados).
+      signal: AbortSignal.timeout(20_000),
+    });
     if (!res.ok) {
       throw new Error(`USGS respondió ${res.status} ${res.statusText}`);
     }

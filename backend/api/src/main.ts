@@ -1,7 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
+import { setDefaultAutoSelectFamily } from 'net';
 import { AppModule } from './app.module';
 import { PgExceptionFilter } from './common/pg-exception.filter';
+
+// Habilita "Happy Eyeballs": si una ruta IPv6 falla, reintenta por IPv4. Evita
+// el "fetch failed" intermitente hacia hosts solo-IPv6 (USGS/CloudFront) y hace
+// más robustas todas las conexiones salientes (incluida Supabase).
+setDefaultAutoSelectFamily(true);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

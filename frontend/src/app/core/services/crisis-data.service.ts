@@ -1,7 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import {
-  CenterCapacity, ReliefCenter, Metrics, NewCenter, NewReport,
+  BatchUploadResult, CenterCapacity, CollapsedBuilding, ReliefCenter, Metrics,
+  NewBuildingRow, NewCenter, NewCenterRow, NewReport,
   OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
 } from '../models/models';
 
@@ -20,6 +21,7 @@ export class CrisisDataService {
   readonly people = signal<PersonReport[]>([]);
   readonly centers = signal<ReliefCenter[]>([]);
   readonly quakes = signal<Quake[]>([]);
+  readonly edificios = signal<CollapsedBuilding[]>([]);
   readonly loading = signal<boolean>(true);
 
   // --- Derived: sitios por tipo ---------------------------------------------
@@ -51,14 +53,17 @@ export class CrisisDataService {
   async loadAll(): Promise<void> {
     this.loading.set(true);
     try {
-      const [people, centers, quakes] = await Promise.all([
+      const [people, centers, quakes, edificios] = await Promise.all([
         this.api.getPersonas(),
         this.api.getCentros(),
         this.api.getSismos(),
+        // Resiliente: si el endpoint aún no está desplegado, no rompe la carga.
+        this.api.getEdificios().catch(() => [] as CollapsedBuilding[]),
       ]);
       this.people.set(people);
       this.centers.set(centers);
       this.quakes.set(quakes);
+      this.edificios.set(edificios);
     } finally {
       this.loading.set(false);
     }
@@ -109,6 +114,23 @@ export class CrisisDataService {
     const center = await this.api.createCentro(input);
     await this.loadAll();
     return center;
+  }
+
+  // ==========================================================================
+  // Carga masiva (CSV): sitios y edificios caídos
+  // ==========================================================================
+  /** Alta masiva de sitios (acopio/refugio/hospital). Servidor desduplica por nombre. */
+  async saveCentersBatch(rows: NewCenterRow[]): Promise<BatchUploadResult> {
+    const res = await this.api.createCentrosBatch(rows);
+    await this.loadAll();
+    return res;
+  }
+
+  /** Alta masiva de edificios caídos. Servidor desduplica por nombre. */
+  async saveBuildingsBatch(rows: NewBuildingRow[]): Promise<BatchUploadResult> {
+    const res = await this.api.createEdificiosBatch(rows);
+    await this.loadAll();
+    return res;
   }
 
   /** Asigna (o limpia con null) el sitio (hospital/refugio) de una persona. */

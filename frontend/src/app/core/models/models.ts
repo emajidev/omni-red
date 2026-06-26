@@ -108,6 +108,56 @@ export interface NewCenter {
   responsable?: string | null;
 }
 
+// ===========================================================================
+// Edificios caídos (estructuras dañadas / colapsadas) — carga CSV
+// ===========================================================================
+export type DamageLevel = 'parcial' | 'severo' | 'colapsado';
+export type BuildingStatus = 'reportado' | 'en_rescate' | 'despejado';
+
+/** Row of `edificios_caidos`. */
+export interface CollapsedBuilding {
+  id: string;
+  nombre: string;
+  ubicacion: string;
+  lat: number;
+  lng: number;
+  nivel_dano: DamageLevel;
+  personas_atrapadas: number;
+  estado: BuildingStatus;
+  contacto?: string | null;
+  created_at: string; // ISO
+}
+
+/** Batch item to create a site (acopio/refugio/hospital) from CSV. */
+export interface NewCenterRow {
+  nombre: string;
+  ubicacion: string;
+  lat: number;
+  lng: number;
+  tipo: CenterType;
+  contacto?: string | null;
+  responsable?: string | null;
+}
+
+/** Batch item to create a collapsed building from CSV. */
+export interface NewBuildingRow {
+  nombre: string;
+  ubicacion: string;
+  lat: number;
+  lng: number;
+  nivel_dano?: DamageLevel;
+  personas_atrapadas?: number;
+  estado?: BuildingStatus;
+  contacto?: string | null;
+}
+
+/** Result of a CSV batch upload (centers / buildings). */
+export interface BatchUploadResult {
+  total: number;
+  added: number;
+  skipped: number;
+}
+
 /** A record extracted by OCR, candidate to be saved. */
 export interface OcrRecord {
   nombre: string;

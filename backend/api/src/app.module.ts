@@ -4,6 +4,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthController } from './health.controller';
 import { PersonasModule } from './personas/personas.module';
 import { CentrosModule } from './centros/centros.module';
+import { EdificiosModule } from './edificios/edificios.module';
 import { SismosModule } from './sismos/sismos.module';
 import { MetricasModule } from './metricas/metricas.module';
 import { ListasModule } from './listas/listas.module';
@@ -15,6 +16,7 @@ import { AuthModule } from './auth/auth.module';
     DatabaseModule,
     PersonasModule,
     CentrosModule,
+    EdificiosModule,
     SismosModule,
     MetricasModule,
     ListasModule,

@@ -3,9 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  BatchUploadResult,
   CenterCapacity,
+  CollapsedBuilding,
   Metrics,
+  NewBuildingRow,
   NewCenter,
+  NewCenterRow,
   NewReport,
   PersonReport,
   PersonStatus,
@@ -89,6 +93,13 @@ export class ApiService {
     );
   }
 
+  /** Alta masiva de sitios (acopio/refugio/hospital) desde CSV. */
+  createCentrosBatch(registros: NewCenterRow[]): Promise<BatchUploadResult> {
+    return firstValueFrom(
+      this.http.post<BatchUploadResult>(`${this.base}/centros/batch`, { registros }),
+    );
+  }
+
   updateCentro(
     id: string,
     capacidad: CenterCapacity,
@@ -99,6 +110,20 @@ export class ApiService {
         capacidad,
         insumos_solicitados: insumos,
       }),
+    );
+  }
+
+  // ---- Edificios caídos ----------------------------------------------------
+  getEdificios(): Promise<CollapsedBuilding[]> {
+    return firstValueFrom(
+      this.http.get<CollapsedBuilding[]>(`${this.base}/edificios`),
+    );
+  }
+
+  /** Alta masiva de edificios caídos desde CSV. */
+  createEdificiosBatch(registros: NewBuildingRow[]): Promise<BatchUploadResult> {
+    return firstValueFrom(
+      this.http.post<BatchUploadResult>(`${this.base}/edificios/batch`, { registros }),
     );
   }
 

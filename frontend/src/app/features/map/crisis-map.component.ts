@@ -5,6 +5,7 @@ import {
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { HIGHLIGHT_ZONES } from '../../core/data/map-zones';
+import { VENEZUELA_OUTLINE } from '../../core/data/ve-outline';
 import { PersonReport, Quake, ReliefCenter } from '../../core/models/models';
 import { CRISIS_SINCE, SOURCE_LABEL, STATUS_LABEL } from '../../core/util/labels';
 
@@ -40,6 +41,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private centersLayer: any;
   private quakesLayer: any;
   private tileLayer: any;
+  private outlineLayer: any;
   private markersById = new Map<string, any>();
 
   // CartoDB raster tiles — light (Voyager) y oscuro (Dark Matter).
@@ -73,7 +75,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     // Swap the basemap when the theme toggles.
     effect(() => {
       const theme = this.ui.theme();
-      if (this.map) this.applyTiles(theme);
+      if (this.map) {
+        this.applyTiles(theme);
+        this.outlineLayer?.setStyle(this.outlineStyle());
+      }
     });
 
     // React to focus requests (tap on a result / metric).
@@ -104,6 +109,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
     // Basemap matches the active theme (light Voyager / dark Dark Matter).
     this.applyTiles(this.ui.theme());
+
+    // Contorno de Venezuela (capa visual; queda debajo de los marcadores).
+    this.drawOutline();
 
     // Epicentros debajo, pines de personas/centros encima (clicables).
     this.quakesLayer = L.layerGroup().addTo(this.map);
@@ -156,6 +164,26 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       this.map.dragging.enable();
       this.map.keyboard.enable();
     }
+  }
+
+  // --- Contorno de Venezuela (capa visual local, ~22 KB) --------------------
+  private drawOutline(): void {
+    this.outlineLayer = L.geoJSON(VENEZUELA_OUTLINE, {
+      interactive: false,            // no roba clics a los marcadores
+      style: () => this.outlineStyle(),
+      pane: 'overlayPane',           // sobre los tiles, debajo de los marcadores
+    }).addTo(this.map);
+  }
+
+  /** Estilo del contorno según el tema (trazo sutil, sin relleno). */
+  private outlineStyle(): any {
+    const dark = this.ui.theme() === 'dark';
+    return {
+      color: dark ? '#94a3b8' : '#475569',
+      weight: 1,
+      opacity: dark ? 0.55 : 0.5,
+      fill: false,
+    };
   }
 
   // --- Basemap (swaps with the theme) ---------------------------------------

@@ -6,8 +6,8 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copiar manifiestos de dependencias
-COPY package.json pnpm-lock.yaml* ./
+# Copiar manifiestos de dependencias (incluido .npmrc para que aplique node-linker=hoisted)
+COPY package.json pnpm-lock.yaml* .npmrc ./
 
 # SOLUCIÓN: Forzar a pnpm a instalar absolutamente todo (incluyendo devDependencies)
 # agregando la bandera --prod=false
@@ -30,7 +30,7 @@ RUN npm install -g serve
 
 # Copiar únicamente los archivos compilados desde la etapa anterior
 # (Asegúrate de que esta ruta coincida con el output real de tu dist/)
-COPY --from=build /app/dist/omni-red-frontend/browser ./public
+COPY --from=build /app/dist/omnired/browser ./public
 
 # Exponer el puerto estándar que Railway leerá de forma automática
 EXPOSE 4200

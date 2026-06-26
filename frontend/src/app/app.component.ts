@@ -14,6 +14,7 @@ import { CountUpDirective } from './shared/count-up.directive';
 
 import { CrisisDataService } from './core/services/crisis-data.service';
 import { UiService } from './core/services/ui.service';
+import { PresenceService } from './core/services/presence.service';
 import { PersonReport } from './core/models/models';
 import { CRISIS_SINCE, statusColor, timeAgo } from './core/util/labels';
 
@@ -77,6 +78,7 @@ declare var gsap: any;
             <span class="stat-chip"><span class="dot" style="background:var(--c-alert)"></span><b class="val" [appCountUp]="data.metrics().desaparecidos"></b><span class="lbl">desap.</span></span>
             <span class="stat-chip"><span class="dot" style="background:var(--c-safe)"></span><b class="val" [appCountUp]="data.metrics().localizados"></b><span class="lbl">salvo</span></span>
             <span class="stat-chip"><span class="dot" style="background:var(--c-info)"></span><b class="val" [appCountUp]="data.metrics().centros_activos"></b><span class="lbl">acopio</span></span>
+            <span class="stat-chip" title="Usuarios conectados ahora"><span class="dot dot-live" style="background:#22c55e"></span><b class="val">{{ presence.online() }}</b><span class="lbl">en línea</span></span>
           </div>
         </div>
       </header>
@@ -254,11 +256,14 @@ declare var gsap: any;
             font-weight:600; color:#4A5568; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #EDF2F7; transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); }
     .action-chip:active { transform: scale(.94); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .action-chip > :first-child { font-size:1.25rem; margin-bottom: 2px; }
+    .dot-live { animation: dot-live-pulse 1.6s ease-in-out infinite; }
+    @keyframes dot-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
   `]
 })
 export class AppComponent implements OnInit, AfterViewInit {
   data = inject(CrisisDataService);
   ui = inject(UiService);
+  presence = inject(PresenceService);
 
   showSplash = signal(true);
   fadeSplash = signal(false);
@@ -316,7 +321,8 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.data.loadAll();
-    
+    this.presence.start();   // contador de usuarios conectados (latido cada 15s)
+
     // 3 second splash screen (2s visible + 1s fade)
     setTimeout(() => {
       this.fadeSplash.set(true); // Start fade out

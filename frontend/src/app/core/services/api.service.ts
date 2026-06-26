@@ -150,6 +150,14 @@ export class ApiService {
     return firstValueFrom(this.http.get<Metrics>(`${this.base}/metricas`));
   }
 
+  // ---- Presencia (usuarios conectados) -------------------------------------
+  /** Envía un latido y devuelve cuántos usuarios están en línea. */
+  presenceHeartbeat(clientId: string): Promise<{ online: number }> {
+    return firstValueFrom(
+      this.http.post<{ online: number }>(`${this.base}/presence/heartbeat`, { clientId }),
+    );
+  }
+
   // ---- Auth (gate de carga) ------------------------------------------------
   /** Valida credenciales de admin contra el backend. true si son correctas. */
   async login(usuario: string, password: string): Promise<boolean> {

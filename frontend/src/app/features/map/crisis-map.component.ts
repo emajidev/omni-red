@@ -56,8 +56,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   ];
 
   // Encuadre inicial al cargar (lo que se ve): Venezuela centrada con Caribe.
-  // El zoom que resulte de encajar este recuadro se fija como zoom MÍNIMO:
-  // a partir de ahí solo se puede hacer zoom-in, no zoom-out.
+  // Se encaja en el rectángulo de la pantalla con fitBounds (responsive).
   private static readonly FRAME_BOUNDS: [[number, number], [number, number]] = [
     [7.0, -73.5],   // SW
     [14.0, -58.0],  // NE
@@ -96,8 +95,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       zoomControl: true,
       attributionControl: true,
       preferCanvas: true,
-      // Restringe el paneo a la región (y por tanto la carga de tiles). El
-      // zoom mínimo se fija dinámicamente en frameVenezuela() tras el encuadre.
+      // Zoom libre (in/out), pero con un piso que evita alejarse al mundo
+      // entero → el mapa sigue siendo ligero. El paneo se acota a la región.
+      minZoom: 5,
+      maxZoom: 19,
       maxBounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
       maxBoundsViscosity: 1.0,
     });
@@ -129,10 +130,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Initial framing: Venezuela centered --------
   private frameVenezuela(): void {
-    // Encaja el recuadro Venezuela + Caribe (llena la pantalla en cualquier
-    // tamaño) y fija ESE nivel como zoom mínimo: a partir de aquí solo zoom-in.
+    // Encaja el recuadro Venezuela + Caribe en el rectángulo de la pantalla
+    // (se adapta a la resolución). El zoom queda libre (in/out).
     this.map.fitBounds(L.latLngBounds(CrisisMapComponent.FRAME_BOUNDS));
-    this.map.setMinZoom(this.map.getZoom());
   }
 
   // --- Basemap (swaps with the theme) ---------------------------------------

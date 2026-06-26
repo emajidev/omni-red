@@ -39,8 +39,8 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
       <!-- Minimalist Metrics -->
       <div class="flex items-center justify-between px-1 text-[11px] font-semibold text-textmuted mb-4 pb-4 border-b border-black/5">
         <span><b class="text-textmain font-extrabold text-sm" [appCountUp]="m().total_reportados"></b> Reg.</span>
-        <span><b class="text-red-500 font-extrabold text-sm" [appCountUp]="m().desaparecidos"></b> Falta</span>
-        <span><b class="text-green-600 font-extrabold text-sm" [appCountUp]="m().localizados"></b> Salvo</span>
+        <span><b class="text-red-500 font-extrabold text-sm" [appCountUp]="m().desaparecidos"></b> Desaparecidos</span>
+        <span><b class="text-green-600 font-extrabold text-sm" [appCountUp]="m().localizados"></b> Encontrados</span>
       </div>
 
       <!-- Filtros -->

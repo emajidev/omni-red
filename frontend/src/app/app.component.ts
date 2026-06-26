@@ -229,7 +229,6 @@ declare var gsap: any;
       @if (data.loading()) {
         <div class="absolute inset-0 z-[2000] grid place-items-center" style="background: var(--bg);">
           <div class="text-center">
-            <div class="text-3xl font-extrabold" style="color: var(--txt);">Juntos somos uno solo</div>
             <div class="mt-2 animate-pulse text-sm" style="color: var(--txt-muted);">Cargando datos…</div>
           </div>
         </div>

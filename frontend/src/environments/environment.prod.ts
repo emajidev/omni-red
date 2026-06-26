@@ -1,11 +1,9 @@
 /**
  * Entorno de PRODUCCIÓN.
  *
- * `apiBaseUrl` relativo: se asume que la API se sirve tras el mismo dominio
- * (p. ej. detrás de un reverse proxy en `/api`). Cámbialo si la API vive en
- * otro host.
+ * `apiBaseUrl` absoluto: apunta directamente al host externo de la API.
  */
 export const environment = {
   production: true,
-  apiBaseUrl: 'omni-red-api-production.up.railway.app/api'
+  apiBaseUrl: 'https://omni-red-api-production.up.railway.app/api'
 };

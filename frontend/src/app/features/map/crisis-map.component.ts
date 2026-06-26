@@ -55,11 +55,12 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     [16.5, -57.0],  // NE (mar Caribe)
   ];
 
-  // Encuadre inicial al cargar (lo que se ve): Venezuela centrada con Caribe.
-  // Se encaja en el rectángulo de la pantalla con fitBounds (responsive).
+  // Encuadre inicial al cargar (lo que se ve): zona afectada (norte-centro de
+  // Venezuela: Caracas/La Guaira/Aragua) con algo de Caribe arriba. Recuadro
+  // más ajustado → fitBounds abre con más zoom-in. Se adapta a la pantalla.
   private static readonly FRAME_BOUNDS: [[number, number], [number, number]] = [
-    [7.0, -73.5],   // SW
-    [14.0, -58.0],  // NE
+    [8.5, -70.5],   // SW
+    [12.8, -63.0],  // NE
   ];
 
   constructor() {

@@ -17,8 +17,14 @@ async function bootstrap() {
   // Mapea errores de Postgres (validaciones de las RPC) a respuestas HTTP limpias
   app.useGlobalFilters(new PgExceptionFilter());
 
-  // CORS para el frontend Angular
-  const origin = (process.env.CORS_ORIGIN ?? 'http://localhost:4200').split(',');
+  // CORS para el frontend Angular.
+  // Si CORS_ORIGIN está definida (Railway) se usa; si no, caen estos defaults:
+  // el dev server local + el frontend de producción en Railway.
+  const defaultOrigins =
+    'http://localhost:4200,https://omni-red-frontend-production.up.railway.app';
+  const origin = (process.env.CORS_ORIGIN ?? defaultOrigins)
+    .split(',')
+    .map((o) => o.trim());
   app.enableCors({ origin });
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;

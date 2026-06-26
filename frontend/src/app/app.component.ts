@@ -78,7 +78,6 @@ declare var gsap: any;
             <span class="stat-chip"><span class="dot" style="background:var(--c-alert)"></span><b class="val" [appCountUp]="data.metrics().desaparecidos"></b><span class="lbl">desap.</span></span>
             <span class="stat-chip"><span class="dot" style="background:var(--c-safe)"></span><b class="val" [appCountUp]="data.metrics().localizados"></b><span class="lbl">salvo</span></span>
             <span class="stat-chip"><span class="dot" style="background:var(--c-info)"></span><b class="val" [appCountUp]="data.metrics().centros_activos"></b><span class="lbl">acopio</span></span>
-            <span class="stat-chip" title="Usuarios conectados ahora"><span class="dot dot-live" style="background:#22c55e"></span><b class="val">{{ presence.online() }}</b><span class="lbl">en línea</span></span>
           </div>
         </div>
       </header>
@@ -148,6 +147,17 @@ declare var gsap: any;
             } @empty {
               <div class="px-3 py-5 text-center text-[11px]" style="color: var(--txt-muted)">Sin reportes a salvo</div>
             }
+          </div>
+
+          <!-- Conectados (usuarios en línea ahora) -->
+          <div class="mx-3 border-t" style="border-color: var(--divider)"></div>
+          <div class="flex items-center gap-2 px-3 py-2.5">
+            <span class="relative flex h-2 w-2">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style="background: var(--c-safe)"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full" style="background: var(--c-safe)"></span>
+            </span>
+            <span class="text-[12px] font-extrabold" style="color: var(--txt)">{{ presence.online() }}</span>
+            <span class="text-[11px] font-semibold" style="color: var(--txt-muted)">en línea</span>
           </div>
 
         </aside>
@@ -256,8 +266,6 @@ declare var gsap: any;
             font-weight:600; color:#4A5568; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #EDF2F7; transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); }
     .action-chip:active { transform: scale(.94); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .action-chip > :first-child { font-size:1.25rem; margin-bottom: 2px; }
-    .dot-live { animation: dot-live-pulse 1.6s ease-in-out infinite; }
-    @keyframes dot-live-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
   `]
 })
 export class AppComponent implements OnInit, AfterViewInit {

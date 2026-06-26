@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { PersonStatus } from '../models/models';
 
 /** Which half-screen bottom sheet is open. */
-export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | null;
+export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | 'menu' | null;
 
 /** Visual theme. Persisted in localStorage + reflected on <html>. */
 export type Theme = 'light' | 'dark';

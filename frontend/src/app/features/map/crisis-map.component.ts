@@ -115,7 +115,46 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
     // Epicentros debajo, pines de personas/centros encima (clicables).
     this.quakesLayer = L.layerGroup().addTo(this.map);
-    this.peopleLayer = L.layerGroup().addTo(this.map);
+    
+    // Configuración de Agrupación (Clusters)
+    const clusterOptions = {
+      maxClusterRadius: 55,
+      disableClusteringAtZoom: 17,
+      spiderfyOnMaxZoom: true,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        const markers = cluster.getAllChildMarkers();
+        let missing = 0;
+        let safe = 0;
+        let isCenter = false;
+        
+        for (const m of markers) {
+          if (m.options.omniType === 'center') isCenter = true;
+          if (m.options.omniStatus === 'desaparecido') missing++;
+          else if (m.options.omniStatus === 'a_salvo') safe++;
+        }
+        
+        let cls = 'bg-white/90 text-gray-800 border-black/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)]';
+        
+        if (!isCenter && (missing > 0 || safe > 0)) {
+          const isMissingMajority = missing >= safe;
+          cls = isMissingMajority
+            ? 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30 shadow-none'
+            : 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/30 shadow-none';
+        }
+
+        return L.divIcon({
+          html: `<div class="flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border-[0.5px] font-bold text-[14px] transform transition-transform hover:scale-110 ${cls}">
+                   ${count}
+                 </div>`,
+          className: 'omni-cluster-icon',
+          iconSize: [40, 40]
+        });
+      }
+    };
+
+    const LAny = L as any;
+    this.peopleLayer = LAny.markerClusterGroup ? LAny.markerClusterGroup(clusterOptions).addTo(this.map) : L.layerGroup().addTo(this.map);
     this.centersLayer = L.layerGroup().addTo(this.map);
 
     // this.drawHighlightZones();
@@ -193,6 +232,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
       subdomains: 'abcd',
       maxZoom: 19,
+      maxNativeZoom: 16,
+      updateWhenZooming: false,
+      keepBuffer: 4,
       // No solicita tiles fuera de la región (Venezuela + Caribe).
       bounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
     });
@@ -282,6 +324,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         ? 'omni-pin omni-pin--alert omni-pin--pulse'
         : p.estado === 'a_salvo' ? 'omni-pin omni-pin--safe' : 'omni-pin';
       const marker = L.marker([p.lat, p.lng], {
+        omniStatus: p.estado,
         icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
       }).bindPopup(this.personPopup(p), { maxWidth: 280 });
       marker.addTo(this.peopleLayer);
@@ -291,6 +334,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     for (const c of centers) {
       const emoji = c.tipo === 'hospital' ? '🏥' : c.tipo === 'refugio' ? '🏠' : '📦';
       const marker = L.marker([c.lat, c.lng], {
+        omniType: 'center',
         icon: L.divIcon({
           className: '',
           html: `<div class="omni-site omni-site--${c.tipo}">${emoji}</div>`,

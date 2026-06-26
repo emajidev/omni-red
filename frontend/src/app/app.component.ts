@@ -11,6 +11,7 @@ import { CentersSheetComponent } from './features/centers/centers-sheet.componen
 import { SismosSheetComponent } from './features/sismos/sismos-sheet.component';
 import { FacilitiesSheetComponent } from './features/facilities/facilities-sheet.component';
 import { CountUpDirective } from './shared/count-up.directive';
+import { BottomSheetComponent } from './shared/bottom-sheet/bottom-sheet.component';
 
 import { CrisisDataService } from './core/services/crisis-data.service';
 import { UiService } from './core/services/ui.service';
@@ -27,7 +28,7 @@ declare var gsap: any;
   imports: [
     FormsModule, CountUpDirective, CrisisMapComponent,
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent,
-    SismosSheetComponent, FacilitiesSheetComponent
+    SismosSheetComponent, FacilitiesSheetComponent, BottomSheetComponent
   ],
   template: `
     <!-- 3 Second Splash Screen -->
@@ -48,7 +49,7 @@ declare var gsap: any;
       <app-crisis-map></app-crisis-map>
 
       <!-- ===== Ticker sísmico (franja superior, ≤30px) ===== -->
-      <div class="seismic-ticker glass-bar" aria-label="Estado sísmico">
+      <div class="seismic-ticker bg-black/90 text-white/90 border-b border-white/10 backdrop-blur-md" aria-label="Estado sísmico">
         <span class="seismic-state" [style.color]="quakeAlert().color">
           <span class="sdot" [style.background]="quakeAlert().color"></span>
           {{ quakeAlert().label }}
@@ -66,19 +67,45 @@ declare var gsap: any;
 
       <!-- ===== Top overlay: brand + live metrics in a themed glass bar ===== -->
       <header class="pointer-events-none absolute inset-x-0 top-7 z-[500] p-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
+        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl bg-white/85 backdrop-blur-xl border border-white/40 text-black shadow-lg p-3 animate-stagger-1 gs-header">
           <!-- Centered Brand -->
           <div class="flex items-center gap-2">
-            <span class="text-base font-extrabold tracking-tight">SomosUno</span>
-            <span style="font-size:1rem;line-height:1;font-family:Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">&#x1F1FB;&#x1F1EA;</span>
+            <span class="text-2xl font-black tracking-tight">SomosUno</span>
+            <svg class="h-[22px] w-[32px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+              <rect width="90" height="20" fill="#FCE300"/>
+              <rect y="20" width="90" height="20" fill="#0038A8"/>
+              <rect y="40" width="90" height="20" fill="#CE1126"/>
+              <g fill="#FFF">
+                <circle cx="41" cy="26" r="1.5"/><circle cx="49" cy="26" r="1.5"/>
+                <circle cx="34" cy="27" r="1.5"/><circle cx="56" cy="27" r="1.5"/>
+                <circle cx="28" cy="30" r="1.5"/><circle cx="62" cy="30" r="1.5"/>
+                <circle cx="24" cy="35" r="1.5"/><circle cx="66" cy="35" r="1.5"/>
+              </g>
+            </svg>
           </div>
 
-          <!-- Live metrics — uniform family, color only on dot + value -->
-          <div class="flex flex-wrap justify-center gap-1.5">
-            <span class="stat-chip"><span class="dot" style="background:#94a3b8"></span><b class="val" [appCountUp]="data.metrics().total_reportados"></b><span class="lbl">total</span></span>
-            <span class="stat-chip"><span class="dot" style="background:var(--c-alert)"></span><b class="val" [appCountUp]="data.metrics().desaparecidos"></b><span class="lbl">desap.</span></span>
-            <span class="stat-chip"><span class="dot" style="background:var(--c-safe)"></span><b class="val" [appCountUp]="data.metrics().localizados"></b><span class="lbl">salvo</span></span>
-            <span class="stat-chip"><span class="dot" style="background:var(--c-info)"></span><b class="val" [appCountUp]="data.metrics().centros_activos"></b><span class="lbl">acopio</span></span>
+          <!-- Live metrics — semantic pills (20% bg opacity, solid text) -->
+          <div class="flex flex-wrap justify-center gap-2">
+            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#64748b]/20 text-[#475569] border-[0.5px] border-[#64748b]/30 rounded-full">
+              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
+              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().total_reportados"></span>
+              <span class="lbl font-light uppercase tracking-wider text-[10px]">total</span>
+            </span>
+            <span class="flex items-center gap-1.5 px-3 py-1 bg-[#ef4444]/20 text-[#ef4444] border-[0.5px] border-[#ef4444]/30 rounded-full">
+              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
+              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().desaparecidos"></span>
+              <span class="lbl font-light uppercase tracking-wider text-[10px]">desap.</span>
+            </span>
+            <span class="flex items-center gap-1.5 px-3 py-1 bg-[#22c55e]/20 text-[#22c55e] border-[0.5px] border-[#22c55e]/30 rounded-full">
+              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
+              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().localizados"></span>
+              <span class="lbl font-light uppercase tracking-wider text-[10px]">salvo</span>
+            </span>
+            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#3b82f6]/20 text-[#3b82f6] border-[0.5px] border-[#3b82f6]/30 rounded-full">
+              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
+              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().centros_activos"></span>
+              <span class="lbl font-light uppercase tracking-wider text-[10px]">acopio</span>
+            </span>
           </div>
         </div>
       </header>
@@ -166,7 +193,7 @@ declare var gsap: any;
 
       <!-- ===== Themed Glass Bottom Navigation ===== -->
       <nav class="absolute inset-x-0 bottom-0 z-[600] flex justify-center px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pointer-events-none gs-nav">
-        <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] items-center justify-start gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
+        <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] items-center justify-evenly sm:justify-start gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
 
           <!-- Item 1: Buscar -->
           <button (click)="ui.open('search')" class="nav-btn" [class.is-active]="ui.sheet() === 'search'">
@@ -192,44 +219,34 @@ declare var gsap: any;
             <span class="lbl">A Salvo</span>
           </button>
 
-          <!-- Item 3: Cargar (imagen OCR / CSV) -->
-          <button (click)="ui.open('ocr')" class="nav-btn" [class.is-active]="ui.sheet() === 'ocr'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-            </svg>
+          <!-- Extra options for Desktop only -->
+          <button (click)="ui.open('ocr')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'ocr'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" /></svg>
             <span class="lbl">Cargar</span>
           </button>
-
-          <!-- Item 4: Acopio -->
-          <button (click)="ui.open('centers')" class="nav-btn" [class.is-active]="ui.sheet() === 'centers'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+          <button (click)="ui.open('centers')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'centers'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
             <span class="lbl">Acopio</span>
           </button>
-
-          <!-- Item 5: Refugios -->
-          <button (click)="ui.open('refugios')" class="nav-btn" [class.is-active]="ui.sheet() === 'refugios'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-7 9 7M5 10v10h14V10" />
-            </svg>
+          <button (click)="ui.open('refugios')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'refugios'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
             <span class="lbl">Refugios</span>
           </button>
-
-          <!-- Item 6: Hospitales -->
-          <button (click)="ui.open('hospitales')" class="nav-btn" [class.is-active]="ui.sheet() === 'hospitales'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" />
-            </svg>
+          <button (click)="ui.open('hospitales')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'hospitales'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
             <span class="lbl">Hospitales</span>
           </button>
-
-          <!-- Item 7: Sismos (histórico) -->
-          <button (click)="ui.open('sismos')" class="nav-btn" [class.is-active]="ui.sheet() === 'sismos'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" />
-            </svg>
+          <button (click)="ui.open('sismos')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'sismos'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" /></svg>
             <span class="lbl">Sismos</span>
+          </button>
+
+          <!-- Item 4: Hamburger Menu (Más Opciones) solo en móvil -->
+          <button (click)="ui.open('menu')" class="nav-btn flex sm:hidden" [class.is-active]="ui.sheet() === 'menu'">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span class="lbl">Más</span>
           </button>
 
         </div>
@@ -244,6 +261,35 @@ declare var gsap: any;
         @case ('sismos')  { <app-sismos-sheet /> }
         @case ('refugios')   { <app-facilities-sheet tipo="refugio" /> }
         @case ('hospitales') { <app-facilities-sheet tipo="hospital" /> }
+        @case ('menu') {
+          <app-bottom-sheet (close)="ui.close()">
+            <div class="px-5 py-6">
+              <h2 class="text-xl font-bold mb-4">Más Opciones</h2>
+              <div class="grid grid-cols-2 gap-3">
+                <button (click)="ui.open('ocr')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" /></svg>
+                  <span class="text-sm font-medium">Cargar Lista</span>
+                </button>
+                <button (click)="ui.open('centers')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                  <span class="text-sm font-medium">Acopio</span>
+                </button>
+                <button (click)="ui.open('refugios')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
+                  <span class="text-sm font-medium">Refugios</span>
+                </button>
+                <button (click)="ui.open('hospitales')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
+                  <span class="text-sm font-medium">Hospitales</span>
+                </button>
+                <button (click)="ui.open('sismos')" class="flex flex-col items-center justify-center p-4 rounded-2xl border col-span-2" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" /></svg>
+                  <span class="text-sm font-medium">Sismos Recientes</span>
+                </button>
+              </div>
+            </div>
+          </app-bottom-sheet>
+        }
       }
 
       <!-- ===== Loading overlay ===== -->

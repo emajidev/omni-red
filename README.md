@@ -10,6 +10,7 @@ asistida por IA para evitar reportes redundantes.
 
 ---
 
+
 ## 🗂️ Estructura del proyecto
 
 ```

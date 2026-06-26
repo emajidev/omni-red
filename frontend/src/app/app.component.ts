@@ -67,7 +67,7 @@ declare var gsap: any;
 
       <!-- ===== Top overlay: brand + live metrics in a themed glass bar ===== -->
       <header class="pointer-events-none absolute inset-x-0 top-7 z-[500] p-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl bg-white/85 backdrop-blur-xl border border-white/40 text-black shadow-lg p-3 animate-stagger-1 gs-header">
+        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
           <!-- Centered Brand -->
           <div class="flex items-center gap-2">
             <span class="text-2xl font-black tracking-tight">SomosUno</span>
@@ -86,7 +86,7 @@ declare var gsap: any;
 
           <!-- Live metrics — semantic pills (20% bg opacity, solid text) -->
           <div class="flex flex-wrap justify-center gap-2">
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#64748b]/20 text-[#475569] border-[0.5px] border-[#64748b]/30 rounded-full">
+            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 border-[0.5px] rounded-full" style="background: var(--chip-bg); color: var(--txt-muted); border-color: var(--divider);">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().total_reportados"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">total</span>

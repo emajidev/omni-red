@@ -17,7 +17,7 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
   imports: [FormsModule, BottomSheetComponent, CountUpDirective],
   template: `
     <app-bottom-sheet title="Buscar personas" subtitle="Filtra por nombre, cédula o ubicación"
-                      icon="🔍" accentBg="bg-infobg text-info" (close)="ui.close()">
+                      icon="search" accentBg="bg-infobg text-info" (close)="ui.close()">
 
       <!-- Metrics -->
       <div class="grid grid-cols-3 gap-2">

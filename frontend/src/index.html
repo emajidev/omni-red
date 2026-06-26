@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es" class="light">
 <head>
   <meta charset="utf-8" />
-  <title>OmniRed · Respuesta a Crisis</title>
+  <title>SomosUno · Respuesta a Crisis</title>
   <script>
     function showBanner(text) {
       // Remove any existing banner
@@ -49,22 +49,20 @@
     };
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#F7FAFC" />
-  <meta name="description" content="LocalizaVZLA: centralización de reportes de personas, acopio y sismos." />
+  <meta name="theme-color" content="#F2F2F7" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>" />
+  <meta name="description" content="SomosUno: centralización de reportes de personas, acopio y sismos." />
 
   <!--
     🔐 Content-Security-Policy (defensa en profundidad).
-    `connect-src` restringe a dónde puede hablar el navegador: Supabase y los tiles del mapa.
-    NOTA: en producción sírvela como CABECERA HTTP y elimina 'unsafe-eval'
-    (necesario solo por el CDN de Tailwind en desarrollo) compilando Tailwind con PostCSS.
   -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com;
-    style-src 'self' 'unsafe-inline' https://unpkg.com;
-    img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org;
-    font-src 'self' data:;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org ws: http://localhost:* http://0.0.0.0:*;
+    style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
+    img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org;
+    font-src 'self' data: https://fonts.gstatic.com;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://tile.openstreetmap.org ws: http://localhost:* http://0.0.0.0:*;
     worker-src 'self' blob:;
   " />
 
@@ -88,29 +86,29 @@
       theme: {
         extend: {
           colors: {
-            // Light Premium Theme Backgrounds
-            appbg: '#EAF0F4',
-            surface: '#FFFFFF',
-            borderlight: '#EDF2F7',
-            textmain: '#1A202C',
-            textmuted: '#718096',
+            // Apple Light Premium Theme Backgrounds
+            appbg: '#F2F2F7',
+            surface: 'rgba(255, 255, 255, 0.85)',
+            borderlight: 'rgba(0, 0, 0, 0.05)',
+            textmain: '#000000',
+            textmuted: '#8E8E93',
             
-            // Pastel & Premium Semantics
-            alert:  '#E53E3E', // Darker red for text/icons
-            alertbg: '#FED7D7', // Pastel red
-            warn:   '#D69E2E', // Darker orange/yellow
-            warnbg: '#FEFCBF', // Pastel yellow
-            safe:   '#38A169', // Darker green
-            safebg: '#C6F6D5', // Pastel green
-            info:   '#2B6CB0', // Darker blue
-            infobg: '#BEE3F8', // Pastel blue
-            primary: '#1A202C' // Dark primary
+            // Apple Colors
+            alert:  '#FF3B30',
+            alertbg: 'rgba(255, 59, 48, 0.15)',
+            warn:   '#FF9500',
+            warnbg: 'rgba(255, 149, 0, 0.15)',
+            safe:   '#34C759',
+            safebg: 'rgba(52, 199, 89, 0.15)',
+            info:   '#007AFF',
+            infobg: 'rgba(0, 122, 255, 0.15)',
+            primary: '#000000'
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif']
+            sans: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
           },
           boxShadow: {
-            'card': '0 4px 6px rgba(0,0,0,0.05), 0 10px 25px rgba(0,0,0,0.03)',
+            'card': '0 4px 24px rgba(0,0,0,0.04)',
             'sheet': '0 -10px 40px rgba(0,0,0,0.08)'
           },
           borderRadius: {
@@ -130,15 +128,16 @@
       }
     };
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-appbg text-textmain font-sans antialiased overflow-hidden">
   <app-root>
-    <!-- Splash mientras Angular arranca -->
-    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#EAF0F4;color:#1A202C;font-family:'Inter',system-ui;">
+    <!-- Basic fallback splash, but we'll use an Angular one for 6 seconds -->
+    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#F2F2F7;color:#000;font-family:'Poppins',system-ui;">
       <div style="text-align:center">
-        <div style="font-size:2rem;font-weight:800;letter-spacing:-.05em">LocalizaVZLA</div>
-        <div style="color:#718096;margin-top:.5rem">Cargando plataforma premium…</div>
+        <div style="font-size:2.5rem;font-weight:800;letter-spacing:-.05em">SomosUno</div>
       </div>
     </div>
   </app-root>

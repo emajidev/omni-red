@@ -12,7 +12,7 @@ import { CAPACITY_CHIP, CAPACITY_LABEL, timeAgo } from '../../core/util/labels';
   imports: [BottomSheetComponent],
   template: `
     <app-bottom-sheet title="Acopio y sismos" subtitle="Centros activos y últimas réplicas"
-                      icon="📦" accentBg="bg-infobg text-info" (close)="ui.close()">
+                      icon="hospital" accentBg="bg-infobg text-info" (close)="ui.close()">
 
       <!-- Tabs -->
       <div class="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-appbg p-1.5 shadow-inner ring-1 ring-borderlight">

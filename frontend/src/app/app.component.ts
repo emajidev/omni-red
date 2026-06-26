@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit, signal } from '@angular/core';
+
+// ... other imports remain the same ...
 import { FormsModule } from '@angular/forms';
 
 import { CrisisMapComponent } from './features/map/crisis-map.component';
@@ -23,6 +25,18 @@ declare var gsap: any;
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent
   ],
   template: `
+    <!-- 3 Second Splash Screen -->
+    @if (showSplash()) {
+      <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#F2F2F7] transition-opacity duration-1000" [class.opacity-0]="fadeSplash()">
+        <h1 class="text-[2.5rem] font-extrabold tracking-tight text-black mb-6">SomosUno</h1>
+        
+        <!-- Loading Progress Bar -->
+        <div class="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div class="h-full bg-black rounded-full" style="animation: fill-bar 2s linear forwards;"></div>
+        </div>
+      </div>
+    }
+
     <!-- ===== Single view: the map IS the canvas ===== -->
     <main class="relative h-[100dvh] w-full overflow-hidden">
       <app-crisis-map></app-crisis-map>
@@ -30,90 +44,90 @@ declare var gsap: any;
       <!-- ===== Top overlay: brand + prominent search + live metric chips ===== -->
       <header class="pointer-events-none absolute inset-x-0 top-0 z-[500] p-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <div class="pointer-events-auto mx-auto flex max-w-2xl flex-col gap-3 gs-header">
-          <div class="flex items-center gap-2">
-            <div class="flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 shadow-card ring-1 ring-borderlight">
-              <span class="text-base font-extrabold tracking-tight text-textmain">LocalizaVZLA</span>
-              <span class="rounded-md px-1.5 py-0.5 text-[9px] font-bold"
-                    [class]="supa.isLive ? 'bg-safebg text-safe' : 'bg-warnbg text-warn'">
+          <div class="flex items-center gap-2 animate-stagger-1">
+            <div class="flex items-center gap-2 rounded-2xl bg-white/80 backdrop-blur-xl px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.06)] border border-black/5">
+              <span class="text-lg font-bold tracking-tight text-black">SomosUno</span>
+              <span class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    [class]="supa.isLive ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'">
                 {{ supa.isLive ? 'LIVE' : 'DEMO' }}
               </span>
             </div>
 
             <!-- Prominent central search bar -->
             <button (click)="ui.open('search')"
-                    class="flex flex-1 items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-left shadow-card ring-1 ring-borderlight hover:ring-info transition">
-              <span class="text-textmuted">🔎</span>
-              <span class="truncate text-sm font-medium text-textmuted">{{ ui.query() || 'Buscar nombre, zona...' }}</span>
+                    class="flex flex-1 items-center gap-2 rounded-2xl bg-white/80 backdrop-blur-xl px-4 py-3 text-left shadow-[0_8px_32px_rgba(0,0,0,0.06)] border border-black/5 hover:border-black/10 transition">
+              <span class="text-slate-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </span>
+              <span class="truncate text-sm font-medium text-slate-500">{{ ui.query() || 'Buscar nombre, zona...' }}</span>
             </button>
           </div>
 
           <!-- Live metric chips -->
-          <div class="flex gap-2 overflow-x-auto pb-1 text-xs">
-            <span class="chip gs-chip ring-borderlight bg-surface text-textmain"><b class="text-textmain" [appCountUp]="data.metrics().total_reportados"></b>&nbsp;reportados</span>
-            <span class="chip gs-chip ring-alertbg bg-alertbg text-alert"><b [appCountUp]="data.metrics().desaparecidos"></b>&nbsp;desaparecidos</span>
-            <span class="chip gs-chip ring-safebg bg-safebg text-safe"><b [appCountUp]="data.metrics().localizados"></b>&nbsp;a salvo</span>
-            <span class="chip gs-chip ring-warnbg bg-warnbg text-warn"><b [appCountUp]="data.metrics().criticos"></b>&nbsp;críticos</span>
-            <span class="chip gs-chip ring-infobg bg-infobg text-info"><b [appCountUp]="data.metrics().centros_activos"></b>&nbsp;acopio</span>
+          <div class="flex gap-2 overflow-x-auto pb-1 text-xs font-medium hide-scrollbar animate-stagger-2">
+            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-white/80 backdrop-blur-md px-3 py-1.5 text-black shadow-sm"><b [appCountUp]="data.metrics().total_reportados"></b> reportados</span>
+            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-red-50 backdrop-blur-md px-3 py-1.5 text-red-600 shadow-sm"><b [appCountUp]="data.metrics().desaparecidos"></b> desaparecidos</span>
+            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-green-50 backdrop-blur-md px-3 py-1.5 text-green-600 shadow-sm"><b [appCountUp]="data.metrics().localizados"></b> a salvo</span>
+            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-orange-50 backdrop-blur-md px-3 py-1.5 text-orange-600 shadow-sm"><b [appCountUp]="data.metrics().criticos"></b> críticos</span>
+            <span class="flex items-center gap-1.5 rounded-full border border-black/5 bg-blue-50 backdrop-blur-md px-3 py-1.5 text-blue-600 shadow-sm"><b [appCountUp]="data.metrics().centros_activos"></b> acopio</span>
           </div>
         </div>
       </header>
 
-      <!-- ===== Map legend (bottom-left) ===== -->
-      <div class="pointer-events-none absolute bottom-36 left-4 z-[500] space-y-1 rounded-xl bg-surface p-3 text-[11px] font-medium shadow-card ring-1 ring-borderlight gs-legend">
+      <!-- ===== Right side panel (sheet) ===== -->
+      @if (ui.sheet() === 'search') { <app-search-sheet class="gs-sheet"></app-search-sheet> }
+      @if (ui.sheet() === 'report') { <app-report-sheet class="gs-sheet"></app-report-sheet> }
+      @if (ui.sheet() === 'ocr')    { <app-ocr-sheet class="gs-sheet"></app-ocr-sheet> }
+      @if (ui.sheet() === 'centers'){ <app-centers-sheet class="gs-sheet"></app-centers-sheet> }
+
+      <!-- ===== Legend (only visible when map is main view) ===== -->
+      <div class="absolute bottom-[100px] right-4 z-[400] flex flex-col gap-2 rounded-2xl bg-white/80 p-3 text-[10px] font-medium shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-md border border-black/5 gs-legend"
+           [class.hidden]="ui.sheet()">
         <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-alert"></span>Desaparecido</div>
-        <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-safe"></span>A salvo</div>
+        <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-safe"></span>A Salvo</div>
         <div class="flex items-center gap-2 text-textmain"><span class="h-3 w-3 rounded-full bg-info"></span>Acopio</div>
       </div>
 
-      <!-- ===== Premium Pill-Shaped Bottom Navigation ===== -->
+      <!-- ===== Light Glassmorphic Bottom Navigation (Apple Style) ===== -->
       <nav class="absolute inset-x-0 bottom-6 z-[600] flex justify-center px-4 pointer-events-none gs-nav">
-        <div class="pointer-events-auto flex w-full max-w-[380px] items-center justify-between rounded-[2.5rem] bg-white/95 px-6 py-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.08)] backdrop-blur-xl ring-1 ring-borderlight">
+        <!-- Glassmorphic Container -->
+        <div class="pointer-events-auto flex w-full max-w-[420px] items-center justify-between rounded-[2.5rem] bg-white/70 px-4 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-2xl border border-black/5 animate-stagger-3">
           
-          <!-- Item 1: Mapa (Home) -->
-          <button (click)="ui.sheet.set(null)" class="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
-                  [class]="!ui.sheet() ? 'text-info' : 'text-textmuted hover:text-textmain'">
-            <svg class="h-6 w-6" [attr.fill]="!ui.sheet() ? 'currentColor' : 'none'" [attr.stroke]="!ui.sheet() ? 'none' : 'currentColor'" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          <!-- Item 1: Buscar (Search) -->
+          <button (click)="ui.open('search')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-4"
+                  [class]="ui.sheet() === 'search' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span class="text-[11px] font-semibold tracking-wide">Mapa</span>
+            <span class="text-xs font-semibold tracking-wide">Buscar</span>
           </button>
           
-          <!-- Item 2: Lista -->
-          <button (click)="ui.open('search')" class="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
-                  [class]="ui.sheet() === 'search' ? 'text-info' : 'text-textmuted hover:text-textmain'">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          <!-- Item 2: Reportar (RED) -->
+          <button (click)="ui.openReport('desaparecido')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
+                  [class]="ui.sheet() === 'report' ? 'bg-red-500 text-white shadow-md' : 'text-red-500 hover:text-red-600 hover:bg-red-50'">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
             </svg>
-            <span class="text-[11px] font-semibold tracking-wide">Lista</span>
+            <span class="text-xs font-semibold tracking-wide">Reportar</span>
           </button>
           
-          <!-- Center Elevated Button: Reportar -->
-          <div class="relative -top-6 mx-2">
-            <button (click)="ui.openReport('desaparecido')" 
-                    class="flex h-[4.2rem] w-[4.2rem] items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 text-white shadow-[0_12px_24px_rgba(43,108,176,0.4)] ring-[6px] ring-appbg/80 transition-transform hover:scale-105 active:scale-95">
-              <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          </div>
-          
-          <!-- Item 4: Escanear -->
-          <button (click)="ui.open('ocr')" class="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
-                  [class]="ui.sheet() === 'ocr' ? 'text-info' : 'text-textmuted hover:text-textmain'">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <!-- Item 3: Escanear -->
+          <button (click)="ui.open('ocr')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
+                  [class]="ui.sheet() === 'ocr' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span class="text-[11px] font-semibold tracking-wide">Escanear</span>
+            <span class="text-xs font-semibold tracking-wide">Escanear</span>
           </button>
           
-          <!-- Item 5: Acopio -->
-          <button (click)="ui.open('centers')" class="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
-                  [class]="ui.sheet() === 'centers' ? 'text-info' : 'text-textmuted hover:text-textmain'">
-            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <!-- Item 4: Acopio -->
+          <button (click)="ui.open('centers')" class="flex flex-col items-center justify-center gap-1 w-[72px] h-14 rounded-3xl transition-all active:scale-95 animate-stagger-5"
+                  [class]="ui.sheet() === 'centers' ? 'bg-black text-white shadow-md' : 'text-slate-500 hover:text-black hover:bg-black/5'">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            <span class="text-[11px] font-semibold tracking-wide">Acopio</span>
+            <span class="text-xs font-semibold tracking-wide">Acopio</span>
           </button>
           
         </div>
@@ -164,8 +178,19 @@ export class AppComponent implements OnInit, AfterViewInit {
   ui = inject(UiService);
   supa = inject(SupabaseService);
 
+  showSplash = signal(true);
+  fadeSplash = signal(false);
+
   ngOnInit(): void {
     this.data.loadAll();
+    
+    // 3 second splash screen (2s visible + 1s fade)
+    setTimeout(() => {
+      this.fadeSplash.set(true); // Start fade out
+      setTimeout(() => {
+        this.showSplash.set(false); // Remove from DOM after transition
+      }, 1000); // 1s transition duration
+    }, 2000); // Wait 2s before fading
   }
 
   ngAfterViewInit(): void {

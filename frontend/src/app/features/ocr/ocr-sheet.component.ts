@@ -22,7 +22,7 @@ const OCR_SAMPLE = `REFUGIO MONTALBÁN — PERSONAS A SALVO
   imports: [BottomSheetComponent],
   template: `
     <app-bottom-sheet title="Cargar lista (OCR)" subtitle="Foto de lista escrita a mano o captura de chat"
-                      icon="📷" accentBg="bg-warnbg text-warn" (close)="ui.close()">
+                      icon="camera" accentBg="bg-warnbg text-warn" (close)="ui.close()">
 
       @if (stage() === 'idle') {
         <!-- Dropzone -->

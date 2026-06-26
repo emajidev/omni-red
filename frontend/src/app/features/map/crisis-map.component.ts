@@ -68,9 +68,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       preferCanvas: true
     });
 
-    // Standard OpenStreetMap for a visible blue sea and colorful map
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Light mode map (CartoDB Voyager) for Apple-like aesthetic
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
+      subdomains: 'abcd',
       maxZoom: 19
     }).addTo(this.map);
 
@@ -94,10 +95,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.map?.remove();
   }
 
-  // --- Initial framing: Venezuela north-central, the 3 zones visible --------
+  // --- Initial framing: Venezuela centered --------
   private frameVenezuela(): void {
-    const bounds = L.latLngBounds(HIGHLIGHT_ZONES.map((z) => [z.lat, z.lng]));
-    this.map.fitBounds(bounds.pad(0.6), { maxZoom: 9 });
+    // Center roughly on Venezuela
+    this.map.setView([7.5, -66.0], 6);
   }
 
   // --- Highlight Caracas / La Guaira / Carabobo -----------------------------

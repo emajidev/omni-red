@@ -44,6 +44,46 @@ declare var gsap: any;
       </div>
     }
 
+    <!-- ===== Modal de bienvenida / aviso (se muestra al cargar, hasta aceptar) ===== -->
+    @if (showIntro()) {
+      <div class="intro-overlay fixed inset-0 z-[9998] flex items-center justify-center p-4"
+           style="background: rgba(0,0,0,.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"
+           role="dialog" aria-modal="true" aria-labelledby="intro-title">
+        <div class="intro-card w-full max-w-md max-h-[88dvh] overflow-y-auto rounded-2xl p-6 shadow-2xl"
+             style="background: var(--sheet); color: var(--txt); border: 1px solid var(--glass-border);">
+
+          <!-- Marca -->
+          <div class="mb-4 flex items-center gap-2">
+            <span id="intro-title" class="text-xl font-black tracking-tight">SomosUno</span>
+            <svg class="h-[18px] w-[27px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+              <rect width="90" height="20" fill="#FCE300"/>
+              <rect y="20" width="90" height="20" fill="#0038A8"/>
+              <rect y="40" width="90" height="20" fill="#CE1126"/>
+            </svg>
+          </div>
+
+          <div class="space-y-3 text-[13px] leading-relaxed">
+            <p><b>SomosUno</b> es una plataforma de respuesta ciudadana ante la actual crisis del terremoto en Venezuela. Su objetivo es centralizar y automatizar la búsqueda de personas para que localizar a alguien sea mucho más rápido y sencillo.</p>
+            <p>Es una iniciativa desarrollada por <b>estudiantes de Ingeniería en Inteligencia Artificial</b>. Para construirla aplicamos técnicas de <b>web scraping</b>, recopilación y consolidación de información, <b>redes neuronales convolucionales (CNN)</b> y algoritmos de <b>vecinos más cercanos (k-NN)</b> para relacionar datos y encontrar coincidencias.</p>
+            <p style="color: var(--txt-muted);">Toda la información mostrada es de <b>dominio público</b> y ha sido recopilada de diversas fuentes abiertas.</p>
+          </div>
+
+          <!-- Aviso de responsabilidad -->
+          <div class="mt-4 rounded-xl p-3 text-[12px] leading-relaxed"
+               style="background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.30);">
+            <b style="color: var(--c-alert);">Aviso de responsabilidad.</b>
+            SomosUno es una herramienta informativa de apoyo. No nos hacemos responsables de la exactitud, vigencia o uso que se dé a la información aquí presentada, ni de las decisiones tomadas con base en ella. Ante una emergencia, contacta siempre a los organismos oficiales de protección civil y rescate.
+          </div>
+
+          <button (click)="acceptIntro()"
+                  class="mt-5 w-full rounded-xl py-2.5 text-sm font-bold text-white transition active:scale-[.98]"
+                  style="background: var(--c-info);">
+            Aceptar
+          </button>
+        </div>
+      </div>
+    }
+
     <!-- ===== Single view: the map IS the canvas ===== -->
     <main class="relative h-[100dvh] w-full overflow-hidden">
       <app-crisis-map></app-crisis-map>
@@ -331,6 +371,16 @@ export class AppComponent implements OnInit, AfterViewInit {
   showSplash = signal(true);
   fadeSplash = signal(false);
 
+  /** Modal de bienvenida/aviso: se muestra al cargar hasta que el usuario acepta. */
+  showIntro = signal(false);
+  private readonly INTRO_KEY = 'somosuno_intro_accepted_v1';
+
+  /** Cierra el modal y recuerda la aceptación para no volver a mostrarlo. */
+  acceptIntro(): void {
+    this.showIntro.set(false);
+    try { localStorage.setItem(this.INTRO_KEY, '1'); } catch { /* almacenamiento no disponible */ }
+  }
+
   /**
    * Dos listas separadas para el panel lateral. La API ya devuelve los reportes
    * ordenados por `created_at desc` (ver PersonasService.findAll), así que
@@ -391,6 +441,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.fadeSplash.set(true); // Start fade out
       setTimeout(() => {
         this.showSplash.set(false); // Remove from DOM after transition
+
+        // Tras el splash, mostrar el modal de bienvenida una sola vez.
+        let accepted = false;
+        try { accepted = localStorage.getItem(this.INTRO_KEY) === '1'; } catch { /* ignore */ }
+        if (!accepted) this.showIntro.set(true);
       }, 1000); // 1s transition duration
     }, 2000); // Wait 2s before fading
   }

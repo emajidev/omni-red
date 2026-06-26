@@ -38,6 +38,12 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# Angular cache
+.angular/
+
+# Windows "mark of the web" artifacts (rompen git en Windows por el ':')
+*Zone.Identifier
+
 # Misc
 *.log
 *.tmp

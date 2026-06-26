@@ -48,18 +48,20 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     dark:  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
   };
 
-  // Recuadro Venezuela + Caribe (SW, NE). Limita la carga de tiles y el paneo a
-  // esta región: el mapa nunca pide tiles del resto del mundo → más ligero y
-  // rápido. Incluye mar Caribe al norte para que Venezuela quede centrada y la
-  // vista llene la pantalla (sin huecos grises).
-  private static readonly VE_BOUNDS: [[number, number], [number, number]] = [
-    [-2.0, -75.0],  // SW (margen sur)
-    [17.0, -58.0],  // NE (mar Caribe al norte)
+  // Límite de paneo + carga de tiles (región): el mapa nunca pide tiles del
+  // resto del mundo → más ligero y rápido. Incluye mar Caribe al norte.
+  private static readonly MAX_BOUNDS: [[number, number], [number, number]] = [
+    [0.0, -75.0],   // SW
+    [16.5, -57.0],  // NE (mar Caribe)
   ];
 
-  // Zoom inicial y mínimo: vista cercana que llena la pantalla, sin permitir
-  // alejarse al mundo entero.
-  private static readonly MIN_ZOOM = 6;
+  // Encuadre inicial al cargar (lo que se ve): Venezuela centrada con Caribe.
+  // El zoom que resulte de encajar este recuadro se fija como zoom MÍNIMO:
+  // a partir de ahí solo se puede hacer zoom-in, no zoom-out.
+  private static readonly FRAME_BOUNDS: [[number, number], [number, number]] = [
+    [7.0, -73.5],   // SW
+    [14.0, -58.0],  // NE
+  ];
 
   constructor() {
     // Rebuild markers whenever the data changes.
@@ -90,15 +92,13 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const veBounds = L.latLngBounds(CrisisMapComponent.VE_BOUNDS);
     this.map = L.map(this.mapEl().nativeElement, {
       zoomControl: true,
       attributionControl: true,
       preferCanvas: true,
-      // Restringe el mapa a Venezuela: no se puede alejar al mundo (minZoom)
-      // ni desplazarse fuera del país (maxBounds) → solo se cargan sus tiles.
-      minZoom: CrisisMapComponent.MIN_ZOOM,
-      maxBounds: veBounds,
+      // Restringe el paneo a la región (y por tanto la carga de tiles). El
+      // zoom mínimo se fija dinámicamente en frameVenezuela() tras el encuadre.
+      maxBounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
       maxBoundsViscosity: 1.0,
     });
 
@@ -129,9 +129,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Initial framing: Venezuela centered --------
   private frameVenezuela(): void {
-    // Vista cercana centrada en Venezuela, con algo de mar Caribe al norte;
-    // llena la pantalla en el zoom inicial.
-    this.map.setView([8.2, -66.3], CrisisMapComponent.MIN_ZOOM);
+    // Encaja el recuadro Venezuela + Caribe (llena la pantalla en cualquier
+    // tamaño) y fija ESE nivel como zoom mínimo: a partir de aquí solo zoom-in.
+    this.map.fitBounds(L.latLngBounds(CrisisMapComponent.FRAME_BOUNDS));
+    this.map.setMinZoom(this.map.getZoom());
   }
 
   // --- Basemap (swaps with the theme) ---------------------------------------
@@ -140,10 +141,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.tileLayer = L.tileLayer(CrisisMapComponent.TILES[theme], {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
       subdomains: 'abcd',
-      minZoom: CrisisMapComponent.MIN_ZOOM,
       maxZoom: 19,
-      // No solicita tiles fuera de Venezuela.
-      bounds: L.latLngBounds(CrisisMapComponent.VE_BOUNDS),
+      // No solicita tiles fuera de la región (Venezuela + Caribe).
+      bounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
     });
     this.tileLayer.addTo(this.map);
     // Keep the basemap below markers/popups.

@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreatePersonaDto } from './dto/create-persona.dto';
 import { DupRowDto } from './dto/check-duplicates.dto';
 import { QueryPersonasDto } from './dto/query-personas.dto';
+import { facilityNameTokens } from './facility-tokens';
 
 /** Tope de filas en modo `all` (mapa/métricas) para evitar respuestas enormes. */
 const ALL_CAP = 10_000;
@@ -24,6 +25,19 @@ export class PersonasService {
     const page = query.page ?? 1;
     const size = query.size ?? 20;
     const all = query.all ?? false;
+
+    // Filtro por SITIO (hospital/refugio): se empareja por NOMBRE, no por
+    // centro_id (que no viene normalizado en los reportes). Resolvemos el nombre
+    // del sitio una vez y extraemos sus tokens distintivos; `null` = sin filtro,
+    // `[]` = sitio sin tokens útiles → no devuelve resultados.
+    let centroTokens: string[] | null = null;
+    if (query.centroId) {
+      const centro = await this.db.queryOne<{ nombre: string }>(
+        `select nombre from public.centros_acopio where id = $1::uuid`,
+        [query.centroId],
+      );
+      centroTokens = centro ? facilityNameTokens(centro.nombre) : [];
+    }
 
     // Construye la cláusula WHERE. `withEstado=false` omite el filtro de estado
     // (se usa para el desglose por estado del contexto de búsqueda).
@@ -56,9 +70,19 @@ export class PersonasService {
           );
         }
       }
-      if (query.centroId) {
-        params.push(query.centroId);
-        conds.push(`v.centro_id = $${params.length}::uuid`);
+      if (centroTokens) {
+        if (centroTokens.length === 0) {
+          // Sitio inexistente o sin nombre distintivo → sin coincidencias.
+          conds.push('false');
+        } else {
+          // Empareja por NOMBRE del sitio: la ubicación contiene alguno de sus
+          // tokens distintivos (sin acentos/mayúsculas).
+          const ors = centroTokens.map((tok) => {
+            params.push(tok);
+            return `public.normalizar_texto(v.ubicacion) ilike '%' || public.normalizar_texto($${params.length}) || '%'`;
+          });
+          conds.push(`(${ors.join(' or ')})`);
+        }
       }
       if (query.tipo) {
         params.push(query.tipo);

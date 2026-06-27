@@ -6,11 +6,12 @@ import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { HIGHLIGHT_ZONES } from '../../core/data/map-zones';
 import { VENEZUELA_OUTLINE } from '../../core/data/ve-outline';
-import { CollapsedBuilding, PersonReport, Quake, ReliefCenter } from '../../core/models/models';
+import { CenterType, CollapsedBuilding, PersonReport, Quake, ReliefCenter } from '../../core/models/models';
 import {
   BUILDING_STATUS_LABEL, CRISIS_SINCE, DAMAGE_LABEL, SOURCE_LABEL, STATUS_LABEL,
   buildingStatusColor, damageColor
 } from '../../core/util/labels';
+import { peopleAtFacility } from '../../core/util/facility-match';
 
 // Leaflet is loaded from CDN (see index.html) and exposed as global `L`.
 declare const L: any;
@@ -170,6 +171,27 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     // al acercar se habilita el arrastre. (Re-evaluado en cada cambio de zoom.)
     this.map.on('zoomend', () => this.syncDragByZoom());
     this.syncDragByZoom();
+
+    // Botón "Ver personas" dentro del popup de un hospital/refugio: abre la
+    // hoja del sitio con su lista de personas + buscador.
+    this.map.on('popupopen', (e: any) => {
+      const btn = e.popup
+        ?.getElement?.()
+        ?.querySelector('[data-facility-id]') as HTMLElement | null;
+      if (!btn) return;
+      btn.addEventListener(
+        'click',
+        () => {
+          const id = btn.getAttribute('data-facility-id');
+          const tipo = btn.getAttribute('data-facility-tipo') as CenterType;
+          if (id && tipo) {
+            this.map.closePopup();
+            this.ui.openFacility(tipo, id);
+          }
+        },
+        { once: true },
+      );
+    });
 
     this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes(), this.data.edificios());
 
@@ -401,8 +423,10 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     const color = c.tipo === 'hospital' ? 'var(--c-alert)' : c.tipo === 'refugio' ? 'var(--c-safe)' : 'var(--c-info)';
     const supplies = c.insumos_solicitados.length
       ? c.insumos_solicitados.map((s) => this.esc(s)).join(', ') : '—';
+    // Personas del sitio por COINCIDENCIA DE NOMBRE (no por centro_id, que no
+    // viene normalizado). Mismo criterio que la hoja de instalaciones.
     const peopleCount = (c.tipo === 'hospital' || c.tipo === 'refugio')
-      ? this.data.people().filter((p) => p.centro_id === c.id).length : 0;
+      ? peopleAtFacility(this.data.people(), c).length : 0;
     return `
       <div class="omni-pop">
         <div class="head">
@@ -412,7 +436,8 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         <div class="kind" style="color:${color}">${kind}</div>
         <div class="row">Ubicación: <b>${this.esc(c.ubicacion)}</b></div>
         ${(c.tipo === 'hospital' || c.tipo === 'refugio')
-          ? `<div class="row">Personas: <b>${peopleCount}</b></div>`
+          ? `<div class="row">Personas: <b>${peopleCount}</b></div>
+             <button type="button" class="omni-pop-btn" data-facility-id="${this.esc(c.id)}" data-facility-tipo="${c.tipo}">Ver personas (${peopleCount})</button>`
           : `<div class="row">Insumos: <b>${supplies}</b></div>`}
         ${c.responsable ? `<div class="row">Responsable: <b>${this.esc(c.responsable)}</b></div>` : ''}
         ${c.contacto ? `<div class="row">📞 Contacto: <b>${this.esc(c.contacto)}</b></div>` : ''}

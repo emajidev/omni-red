@@ -185,7 +185,18 @@
       "PowerShell(wsl -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api; echo \"=== RUN 1 ===\"; node _test_sync.cjs; echo \"=== RUN 2 \\(idempotencia\\) ===\"; node _test_sync.cjs')",
       "PowerShell(wsl -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api && node _test_sync.cjs')",
       "Bash(break)",
-      "Bash(exit 0)"
+      "Bash(exit 0)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\"; echo \"=== FRONTEND ===\"; ls -la frontend; echo \"=== BACKEND ===\"; ls -la backend)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\"; find . -type f -not -path '*/node_modules/*' | head -100)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\backend\\\\\\\\api\"; find . -type f -not -path '*/node_modules/*' -not -path '*/dist/*' | head -100)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\"; echo \"=== dataset ===\"; ls -la dataset; echo \"=== seed head ===\"; grep -iE \"hospital|centros_acopio|ubicacion\" backend/supabase/04_seed.sql | head -40)",
+      "Bash(grep -iA2 \"hospital\" backend/supabase/04_seed.sql)",
+      "Bash(awk '/insert into public.centros_acopio/,/;/' backend/supabase/04_seed.sql)",
+      "Bash(node --version)",
+      "Bash(ls node_modules/.bin/ng)",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && node --version && \\(test -x node_modules/.bin/ng && echo \"ng present\" || echo \"no ng\"\\)')",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && npx ng build --configuration development 2>&1 | tail -40')",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api && \\(test -x node_modules/.bin/tsc && npx tsc --noEmit -p tsconfig.build.json 2>&1 | tail -30 && echo \"TSC_DONE\" || echo \"no tsc / deps not installed\"\\)')"
     ],
     "additionalDirectories": [
       "\\tmp"

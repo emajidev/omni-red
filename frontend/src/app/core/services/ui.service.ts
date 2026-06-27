@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { PersonStatus } from '../models/models';
+import { CenterType, PersonStatus } from '../models/models';
 
 /** Which half-screen bottom sheet is open. */
 export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | 'edificios' | 'report-building' | 'menu' | null;
@@ -34,6 +34,14 @@ export class UiService {
 
   /** Status preselected when opening the report form. */
   readonly initialReportStatus = signal<PersonStatus>('desaparecido');
+
+  /**
+   * Sitio (hospital/refugio) a enfocar al abrir la hoja de instalaciones. Lo
+   * fija {@link openFacility} cuando se toca un sitio en el mapa o en la lista,
+   * y la {@link FacilitiesSheetComponent} lo consume al iniciar para abrir
+   * directo su lista de personas. Se limpia tras consumirlo.
+   */
+  readonly facilityFocusId = signal<string | null>(null);
 
   /** Signal the map observes to recenter / open a marker. */
   readonly focus = signal<MapFocus | null>(null);
@@ -85,6 +93,16 @@ export class UiService {
   openReport(status: PersonStatus): void {
     this.initialReportStatus.set(status);
     this.sheet.set('report');
+  }
+
+  /**
+   * Abre la hoja de instalaciones (hospitales/refugios) enfocada en un sitio
+   * concreto, mostrando directamente su lista de personas con buscador. Se usa
+   * al tocar un hospital/refugio en el mapa o en la lista.
+   */
+  openFacility(tipo: CenterType, id: string): void {
+    this.facilityFocusId.set(id);
+    this.sheet.set(tipo === 'hospital' ? 'hospitales' : 'refugios');
   }
 
   /** Focus the map on a coordinate and optionally close the sheet. */

@@ -45,8 +45,16 @@ export class PersonasService {
         )`);
       }
       if (query.ubicacion?.trim()) {
-        params.push(`%${query.ubicacion.trim()}%`);
-        conds.push(`v.ubicacion ilike $${params.length}`);
+        // Filtro TOLERANTE por ubicación: sin acentos/mayúsculas
+        // (normalizar_texto) y por TOKENS (cada palabra como subcadena, en
+        // cualquier orden), no por frase/palabra exacta. Así "centro caracas"
+        // encuentra "Centro de Caracas" y "petare" encuentra "Petaré".
+        for (const tok of query.ubicacion.trim().split(/\s+/)) {
+          params.push(tok);
+          conds.push(
+            `public.normalizar_texto(v.ubicacion) ilike '%' || public.normalizar_texto($${params.length}) || '%'`,
+          );
+        }
       }
       if (query.centroId) {
         params.push(query.centroId);

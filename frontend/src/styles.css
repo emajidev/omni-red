@@ -272,6 +272,11 @@ html.light .sheet-panel .divide-white\/5 > * + * { border-color: var(--divider) 
 .omni-pop .row { font-size: 12px; color: var(--txt-muted); margin-bottom: 2px; }
 .omni-pop .row b { color: var(--txt); font-weight: 600; }
 .omni-pop .flag { margin-top: 6px; font-size: 11px; color: var(--c-warn); font-weight: 600; }
+.omni-pop-btn { margin-top: 8px; width: 100%; padding: 7px 10px; border-radius: 10px;
+  background: var(--c-info); color: #fff; font-size: 12px; font-weight: 700; border: 0;
+  cursor: pointer; transition: filter .15s, transform .1s; }
+.omni-pop-btn:hover { filter: brightness(1.05); }
+.omni-pop-btn:active { transform: scale(.98); }
 
 /* Control de zoom — pastillas glass */
 .leaflet-control-zoom {

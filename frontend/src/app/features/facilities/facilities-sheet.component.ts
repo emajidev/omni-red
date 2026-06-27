@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, Input, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, computed, inject, signal } from '@angular/core';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
 import { PaginatorComponent } from '../../shared/paginator/paginator.component';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { CenterType, PersonReport, ReliefCenter } from '../../core/models/models';
 import { STATUS_LABEL, statusColor } from '../../core/util/labels';
+import { facilityTokens, normalizeText, peopleAtFacility, personAtFacility } from '../../core/util/facility-match';
 
 /**
  * Hoja reutilizable para Refugios u Hospitales (según `tipo`).
@@ -32,7 +33,7 @@ import { STATUS_LABEL, statusColor } from '../../core/util/labels';
               <div class="flex items-start justify-between gap-2">
                 <span class="text-sm font-extrabold" style="color: var(--txt)">{{ f.nombre }}</span>
                 <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      style="background: var(--chip-bg); color: var(--txt)">{{ countFor(f.id) }} pers.</span>
+                      style="background: var(--chip-bg); color: var(--txt)">{{ countFor(f) }} pers.</span>
               </div>
               <div class="mt-1 text-[13px] font-medium" style="color: var(--txt-muted)">📍 {{ f.ubicacion }}</div>
               @if (f.contacto) {
@@ -102,11 +103,24 @@ import { STATUS_LABEL, statusColor } from '../../core/util/labels';
     </app-bottom-sheet>
   `
 })
-export class FacilitiesSheetComponent {
+export class FacilitiesSheetComponent implements OnInit {
   @Input({ required: true }) tipo!: CenterType;
 
   data = inject(CrisisDataService);
   ui = inject(UiService);
+
+  /**
+   * Si la hoja se abrió enfocada en un sitio concreto (clic en el mapa o en la
+   * lista, vía {@link UiService.openFacility}), abre directo su lista de
+   * personas. Consume el foco una sola vez para no re-disparar al volver atrás.
+   */
+  ngOnInit(): void {
+    const id = this.ui.facilityFocusId();
+    if (!id) return;
+    this.ui.facilityFocusId.set(null);
+    const f = this.facilities().find((x) => x.id === id);
+    if (f) this.open(f);
+  }
 
   readonly selected = signal<ReliefCenter | null>(null);
   readonly query = signal('');
@@ -132,12 +146,15 @@ export class FacilitiesSheetComponent {
   filteredPeople = computed(() => {
     const f = this.selected();
     if (!f) return [];
-    const q = this.query().toLowerCase().trim();
+    // Personas del sitio por COINCIDENCIA DE NOMBRE (no por centro_id, que no
+    // viene normalizado). Ver core/util/facility-match.
+    const tokens = facilityTokens(f);
+    const q = normalizeText(this.query());
     const min = this.ageMin();
     const max = this.ageMax();
     return this.data.people()
-      .filter((p) => p.centro_id === f.id)
-      .filter((p) => !q || p.nombre.toLowerCase().includes(q) || (p.cedula ?? '').toLowerCase().includes(q))
+      .filter((p) => personAtFacility(p, tokens))
+      .filter((p) => !q || normalizeText(p.nombre).includes(q) || normalizeText(p.cedula).includes(q))
       .filter((p) => {
         const e = p.edad ?? null;
         if (min != null && (e == null || e < min)) return false;
@@ -163,8 +180,8 @@ export class FacilitiesSheetComponent {
       ? 'Personas atendidas por hospital'
       : 'Personas resguardadas por refugio';
 
-  countFor(id: string): number {
-    return this.data.people().filter((p) => p.centro_id === id).length;
+  countFor(f: ReliefCenter): number {
+    return peopleAtFacility(this.data.people(), f).length;
   }
 
   open(f: ReliefCenter): void {

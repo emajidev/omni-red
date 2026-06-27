@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MATCH_THRESHOLD, normalize, relevance } from './text-match';
 
 /**
  * Persona del registro médico EXTERNO de fvivemas, ya normalizada al contrato
@@ -14,8 +15,28 @@ export interface ExternalPerson {
   lng: number | null;
   telefono_contacto: string | null;
   detalle: string | null;
-  fuente: 'fvivemas';
+  /** Nombre corto de la fuente. Para fuentes externas coincide con la API. */
+  fuente: 'fvivemas' | 'ayuda';
+  /** URL del API/fuente que se consultó (uniforme en todos los endpoints). */
+  fuente_api: string;
   created_at: string;
+}
+
+/**
+ * Registro interno (caché) con los campos extra que NO se exponen en
+ * {@link ExternalPerson} pero se necesitan para las métricas:
+ * `caseType` ('patient' | 'request') y el `healthStatus` crudo.
+ */
+interface FvivemasRecord extends ExternalPerson {
+  caseType: string;
+  healthStatus: string;
+}
+
+/** Totales de fvivemas para los pills del dashboard. */
+export interface FvivemasMetrics {
+  total_reportados: number;
+  desaparecidos: number;
+  localizados: number;
 }
 
 /**
@@ -38,11 +59,16 @@ export class ExternalSearchService {
   private readonly apiKey = process.env.FVIVEMAS_API_KEY ?? '';
   private readonly collection = process.env.FVIVEMAS_COLLECTION ?? 'medical_cases';
 
-  /** Solo traemos los campos que mostramos: reduce el payload de Firestore. */
+  /** URL del API consultado (Firestore REST), expuesta en `fuente_api`. */
+  private readonly apiUrl =
+    `https://firestore.googleapis.com/v1/projects/${this.projectId}` +
+    `/databases/(default)/documents/${this.collection}`;
+
+  /** Solo traemos los campos que mostramos / contamos: reduce el payload. */
   private readonly FIELDS = [
     'name', 'lastName', 'idCard', 'age',
     'hospitalName', 'coordinates', 'healthStatus', 'diagnosis',
-    'contact', 'createdAt',
+    'contact', 'createdAt', 'caseType',
   ];
   private readonly PAGE_SIZE = 300;
   private readonly MAX_PAGES = 12;
@@ -50,36 +76,57 @@ export class ExternalSearchService {
   private readonly MAX_RESULTS = 50;
   private readonly MIN_QUERY = 2;
 
-  private cache: ExternalPerson[] = [];
+  private cache: FvivemasRecord[] = [];
   private cacheAt = 0;
-  private inflight: Promise<ExternalPerson[]> | null = null;
+  private inflight: Promise<FvivemasRecord[]> | null = null;
 
   /**
-   * Busca personas por substring (nombre / cédula / ubicación). Pensado como
-   * fallback: con menos de 2 caracteres devuelve []. Nunca lanza: ante fallo
-   * de la fuente externa degrada a lista vacía.
+   * Busca personas de forma TOLERANTE (sin acentos/mayúsculas y por similitud,
+   * no solo substring) sobre nombre / cédula / ubicación / detalle. Ordena por
+   * relevancia y devuelve las mejores. Con menos de 2 caracteres devuelve [].
+   * Nunca lanza: ante fallo de la fuente externa degrada a lista vacía.
    */
   async searchExternal(query: string): Promise<ExternalPerson[]> {
-    const q = this.norm(query ?? '');
-    if (q.length < this.MIN_QUERY) return [];
+    const term = (query ?? '').trim();
+    if (normalize(term).length < this.MIN_QUERY) return [];
 
     const all = await this.getAll();
-    const out: ExternalPerson[] = [];
+    const scored: { p: ExternalPerson; score: number }[] = [];
     for (const p of all) {
-      if (
-        this.norm(p.nombre).includes(q) ||
-        this.norm(p.cedula ?? '').includes(q) ||
-        this.norm(p.ubicacion).includes(q)
-      ) {
-        out.push(p);
-        if (out.length >= this.MAX_RESULTS) break;
-      }
+      const score = relevance(term, [
+        { text: p.nombre, weight: 1 },
+        { text: p.cedula, weight: 0.95 },
+        { text: p.ubicacion, weight: 0.7 },
+        { text: p.detalle, weight: 0.5 },
+      ]);
+      if (score >= MATCH_THRESHOLD) scored.push({ p, score });
     }
-    return out;
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, this.MAX_RESULTS).map((s) => s.p);
+  }
+
+  /**
+   * Totales para el dashboard, calculados SOLO sobre los reportes de búsqueda
+   * de personas (`caseType === 'request'`); los pacientes hospitalarios
+   * (`caseType === 'patient'`) NO se cuentan. Un caso se considera "encontrado"
+   * cuando su `healthStatus` es "Resuelto"; el resto sigue "desaparecido".
+   * Resiliente: ante fuente no configurada/indisponible devuelve ceros.
+   */
+  async metrics(): Promise<FvivemasMetrics> {
+    const all = await this.getAll();
+    const requests = all.filter((p) => p.caseType === 'request');
+    const encontrados = requests.filter(
+      (p) => this.norm(p.healthStatus) === 'resuelto',
+    ).length;
+    return {
+      total_reportados: requests.length,
+      desaparecidos: requests.length - encontrados,
+      localizados: encontrados,
+    };
   }
 
   // --- Caché -----------------------------------------------------------------
-  private getAll(): Promise<ExternalPerson[]> {
+  private getAll(): Promise<FvivemasRecord[]> {
     if (!this.apiKey || !this.projectId) return Promise.resolve([]);
 
     const fresh = Date.now() - this.cacheAt < this.CACHE_TTL_MS;
@@ -104,8 +151,8 @@ export class ExternalSearchService {
   }
 
   // --- Firestore REST --------------------------------------------------------
-  private async fetchAll(): Promise<ExternalPerson[]> {
-    const out: ExternalPerson[] = [];
+  private async fetchAll(): Promise<FvivemasRecord[]> {
+    const out: FvivemasRecord[] = [];
     let pageToken: string | undefined;
     for (let i = 0; i < this.MAX_PAGES; i++) {
       const page = await this.fetchPage(pageToken);
@@ -135,8 +182,8 @@ export class ExternalSearchService {
     return (await res.json()) as FsListResponse;
   }
 
-  // --- Mapeo Firestore → ExternalPerson --------------------------------------
-  private mapDoc(doc: FsDocument): ExternalPerson | null {
+  // --- Mapeo Firestore → FvivemasRecord --------------------------------------
+  private mapDoc(doc: FsDocument): FvivemasRecord | null {
     const f = doc.fields ?? {};
     const get = (k: string) => this.scalar(f[k]);
 
@@ -173,7 +220,11 @@ export class ExternalSearchService {
       telefono_contacto: phones[0] ?? null,
       detalle,
       fuente: 'fvivemas',
+      fuente_api: this.apiUrl,
       created_at: (get('createdAt') ?? '').toString() || new Date(0).toISOString(),
+      // Campos internos para las métricas (no forman parte de ExternalPerson).
+      caseType: (get('caseType') ?? '').toString().trim(),
+      healthStatus: (get('healthStatus') ?? '').toString().trim(),
     };
   }
 

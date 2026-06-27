@@ -120,7 +120,30 @@
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\backend\\\\\\\\api\" 2>/dev/null; ls -a | grep -i env)",
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\backend\\\\\\\\api\")",
       "Bash(rm -f _migrate_estado.mjs)",
-      "Bash(rm -f _apply_functions.mjs)"
+      "Bash(rm -f _apply_functions.mjs)",
+      "Bash(cd \"\\\\\\\\wsl.localhost\\\\Ubuntu\\\\home\\\\ema\\\\personal-repos\\\\omni-red\\\\backend\\\\api\")",
+      "Bash(curl -s \"https://firestore.googleapis.com/v1/projects/asistencia-medica-fvivemas/databases/\\(default\\)/documents/medical_cases?pageSize=300&key=AIzaSyAc98GrjI9_OcdoPNg1OAwy_gOWWc0iTmw&mask.fieldPaths=healthStatus\")",
+      "Bash(python3 -c *)",
+      "Bash(node -e *)",
+      "Bash(curl -s \"https://firestore.googleapis.com/v1/projects/asistencia-medica-fvivemas/databases/\\(default\\)/documents/medical_cases?pageSize=3&key=AIzaSyAc98GrjI9_OcdoPNg1OAwy_gOWWc0iTmw\" 2>/dev/null > /tmp/fv_full.json; head -c 3500 /tmp/fv_full.json)",
+      "Bash(curl -s -X POST 'https://firestore.googleapis.com/v1/projects/asistencia-medica-fvivemas/databases/\\(default\\)/documents:runQuery?key=AIzaSyAc98GrjI9_OcdoPNg1OAwy_gOWWc0iTmw' -H 'Content-Type: application/json' -d '{\"structuredQuery\":{\"from\":[{\"collectionId\":\"medical_cases\"}],\"where\":{\"fieldFilter\":{\"field\":{\"fieldPath\":\"caseType\"},\"op\":\"EQUAL\",\"value\":{\"stringValue\":\"request\"}}},\"limit\":6}}')",
+      "Bash(awk '/\"healthStatus\":/{getline; print}' req.json)",
+      "Bash(curl -sL -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\)\" \"https://www.desaparecidosterremotovenezuela.com/\" -o site.html)",
+      "Bash(grep -oE '.{0,80}theempire\\\\.tech/api.{0,200}' chunk_517-be6efe891dda0962.js)",
+      "Bash(grep -oiE '`?/api/[a-z0-9{}.$_/?&=-]+|stats[a-zA-Z]*|/cases|/people|/persons|/desaparecidos|/reports')",
+      "Bash(curl -s \"https://desaparecidos-terremoto-api.theempire.tech/api\" -A \"Mozilla/5.0\")",
+      "Bash(grep -aoE '\\(total|desaparecid|encontrad|reunif|fallecid|stats\\)[^,}]{0,40}' site.html)",
+      "Bash(grep -aoE '.{0,30}\\(fetch|\\\\.json\\\\\\(\\\\\\)|concat\\\\\\(n\\).{0,90}' chunk_95-0213308a272cc707.js)",
+      "Bash(grep -aoE 'key:\"[a-zA-Z]+\".{0,60}' chunk_page-8b4e15eb49bdfe42.js)",
+      "Bash(grep -aoE '.{0,40}\\(registrosTotales|personasUnicas|sinContacto|localizado|estadistic|stats|resumen|/p\\\\b\\).{0,80}' chunk_95-0213308a272cc707.js)",
+      "Bash(grep -aoE 'styles_stat__Qu3qy[^@]{0,260}' site.html)",
+      "Bash(curl -s --http2 -H 'authority: desaparecidos-terremoto-api.theempire.tech' -H 'accept: application/json, text/plain, */*' -H 'accept-language: es-ES,es;q=0.9,en;q=0.8' -H 'origin: https://www.desaparecidosterremotovenezuela.com' -H 'referer: https://www.desaparecidosterremotovenezuela.com/' -H 'sec-ch-ua: \"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"' -H 'sec-ch-ua-mobile: ?0' -H 'sec-ch-ua-platform: \"Windows\"' -H 'sec-fetch-dest: empty' -H 'sec-fetch-mode: cors' -H 'sec-fetch-site: cross-site' -H 'user-agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/124.0.0.0 Safari/537.36' 'https://desaparecidos-terremoto-api.theempire.tech/api/personas?page=1&size=1' -o r2.json -w 'HTTP %{http_code} bytes=%{size_download}\\\\n')",
+      "WebFetch(domain:desaparecidos-terremoto-api.theempire.tech)",
+      "Bash(curl -s -D - -o /dev/null -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) Chrome/124.0 Safari/537.36\" \"https://desaparecidos-terremoto-api.theempire.tech/api/personas?page=1&size=1\")",
+      "Read(///wsl.localhost/tmp//**)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }

@@ -1,34 +1,136 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreatePersonaDto, ESTADOS } from './dto/create-persona.dto';
+import { CreatePersonaDto } from './dto/create-persona.dto';
 import { DupRowDto } from './dto/check-duplicates.dto';
+import { QueryPersonasDto } from './dto/query-personas.dto';
+
+/** Tope de filas en modo `all` (mapa/métricas) para evitar respuestas enormes. */
+const ALL_CAP = 10_000;
 
 @Injectable()
 export class PersonasService {
   constructor(private readonly db: DatabaseService) {}
 
   /**
-   * Lista de personas reportadas. Lee la VISTA pública con la cédula
-   * enmascarada (defensa de PII). Filtrable por estado.
+   * Listado PAGINADO de personas reportadas. Lee la VISTA pública con la
+   * cédula enmascarada (defensa de PII). Soporta búsqueda (nombre/cédula),
+   * filtros (estado, ubicación, sitio concreto o categoría hospital/refugio)
+   * y devuelve el desglose por estado del contexto de búsqueda.
+   *
+   * Con `all=true` ignora la paginación y devuelve todas las filas que matchean
+   * (tope {@link ALL_CAP}); lo usan el mapa y las métricas.
    */
-  findAll(estado?: string) {
-    if (estado) {
-      if (!ESTADOS.includes(estado as any)) {
-        throw new BadRequestException(
-          `estado inválido. Valores: ${ESTADOS.join(', ')}`,
+  async findPaged(query: QueryPersonasDto, fuenteApiUrl = '/api/personas') {
+    const page = query.page ?? 1;
+    const size = query.size ?? 20;
+    const all = query.all ?? false;
+
+    // Construye la cláusula WHERE. `withEstado=false` omite el filtro de estado
+    // (se usa para el desglose por estado del contexto de búsqueda).
+    const build = (withEstado: boolean) => {
+      const params: unknown[] = [];
+      const conds: string[] = [];
+      if (query.q?.trim()) {
+        // Búsqueda TOLERANTE: sin acentos/mayúsculas (normalizar_texto = lower+
+        // unaccent) y DIFUSA por trigramas (`%`, pg_trgm) además del substring,
+        // para inferir por similitud y no solo por coincidencia exacta.
+        params.push(query.q.trim());
+        const i = params.length;
+        conds.push(`(
+          public.normalizar_texto(v.nombre)            ilike '%' || public.normalizar_texto($${i}) || '%'
+          or public.normalizar_texto(v.ubicacion)      ilike '%' || public.normalizar_texto($${i}) || '%'
+          or public.normalizar_texto(coalesce(v.cedula, '')) ilike '%' || public.normalizar_texto($${i}) || '%'
+          or public.normalizar_texto(v.nombre)         %     public.normalizar_texto($${i})
+          or public.normalizar_texto(v.ubicacion)      %     public.normalizar_texto($${i})
+        )`);
+      }
+      if (query.ubicacion?.trim()) {
+        params.push(`%${query.ubicacion.trim()}%`);
+        conds.push(`v.ubicacion ilike $${params.length}`);
+      }
+      if (query.centroId) {
+        params.push(query.centroId);
+        conds.push(`v.centro_id = $${params.length}::uuid`);
+      }
+      if (query.tipo) {
+        params.push(query.tipo);
+        conds.push(
+          `v.centro_id in (select id from public.centros_acopio where tipo = $${params.length}::public.tipo_centro)`,
         );
       }
-      return this.db.query(
-        `select *
-           from public.v_reportes_publico
-          where estado = $1::estado_persona
-          order by created_at desc`,
-        [estado],
-      );
-    }
-    return this.db.query(
-      `select * from public.v_reportes_publico order by created_at desc`,
+      if (withEstado && query.estado) {
+        params.push(query.estado);
+        conds.push(`v.estado = $${params.length}::estado_persona`);
+      }
+      return { params, where: conds.length ? `where ${conds.join(' and ')}` : '' };
+    };
+
+    // ---- Desglose por estado (contexto de búsqueda, SIN filtro de estado) ----
+    const bd = build(false);
+    const breakdown = await this.db.query<{ estado: string; n: number }>(
+      `select v.estado, count(*)::int as n
+         from public.v_reportes_publico v
+         ${bd.where}
+        group by v.estado`,
+      bd.params,
     );
+    const counts: Record<string, number> = {
+      desaparecido: 0,
+      encontrado: 0,
+      fallecido: 0,
+      desconocido: 0,
+    };
+    for (const r of breakdown) counts[r.estado] = r.n;
+    const totals = {
+      personas: Object.values(counts).reduce((a, b) => a + b, 0),
+      encontrados: counts.encontrado,
+      desaparecidos: counts.desaparecido,
+      fallecidos: counts.fallecido,
+      desconocidos: counts.desconocido,
+    };
+    // Total para la paginación: respeta el filtro de estado si está presente.
+    const total = query.estado ? counts[query.estado] ?? 0 : totals.personas;
+
+    // ---- Página de datos (respeta TODOS los filtros) ----
+    const pg = build(true);
+    // Orden por RELEVANCIA cuando hay término: coincidencia por substring (boost)
+    // + similitud trigram sobre el nombre; en empate, lo más reciente primero.
+    let orderBy = 'order by v.created_at desc';
+    if (query.q?.trim()) {
+      pg.params.push(query.q.trim());
+      const qi = pg.params.length;
+      orderBy = `order by (
+          (case when public.normalizar_texto(v.nombre) ilike '%' || public.normalizar_texto($${qi}) || '%' then 1.0 else 0 end)
+          + similarity(public.normalizar_texto(v.nombre), public.normalizar_texto($${qi}))
+        ) desc, v.created_at desc`;
+    }
+    let sql = `select *
+                 from public.v_reportes_publico v
+                 ${pg.where}
+                ${orderBy}`;
+    if (all) {
+      sql += ` limit ${ALL_CAP}`;
+    } else {
+      pg.params.push(size);
+      const limIdx = pg.params.length;
+      pg.params.push((page - 1) * size);
+      const offIdx = pg.params.length;
+      sql += ` limit $${limIdx} offset $${offIdx}`;
+    }
+    const rows = await this.db.query<Record<string, unknown>>(sql, pg.params);
+    // `fuente_api` = URL del API/fuente consultado (uniforme con los endpoints
+    // externos). El `fuente` por fila (canal del reporte: web/twitter/ocr…) se
+    // conserva intacto.
+    const data = rows.map((r) => ({ ...r, fuente_api: fuenteApiUrl }));
+
+    return {
+      data,
+      page: all ? 1 : page,
+      size: all ? data.length : size,
+      total,
+      totalPages: all ? 1 : Math.max(1, Math.ceil(total / size)),
+      totals,
+    };
   }
 
   /**

@@ -197,7 +197,8 @@
       "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && node --version && \\(test -x node_modules/.bin/ng && echo \"ng present\" || echo \"no ng\"\\)')",
       "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && npx ng build --configuration development 2>&1 | tail -40')",
       "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api && \\(test -x node_modules/.bin/tsc && npx tsc --noEmit -p tsconfig.build.json 2>&1 | tail -30 && echo \"TSC_DONE\" || echo \"no tsc / deps not installed\"\\)')",
-      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api && npx tsc --noEmit -p tsconfig.build.json 2>&1 | tail -30 && echo \"TSC_DONE\"')"
+      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/backend/api && npx tsc --noEmit -p tsconfig.build.json 2>&1 | tail -30 && echo \"TSC_DONE\"')",
+      "Bash(wsl.exe -d Ubuntu -- bash -lc 'cd /home/ema/personal-repos/omni-red/frontend && npx ng build --configuration development 2>&1 | tail -25')"
     ],
     "additionalDirectories": [
       "\\tmp"

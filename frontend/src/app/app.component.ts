@@ -16,7 +16,7 @@ import { CountUpDirective } from './shared/count-up.directive';
 import { BottomSheetComponent } from './shared/bottom-sheet/bottom-sheet.component';
 
 import { CrisisDataService } from './core/services/crisis-data.service';
-import { UiService } from './core/services/ui.service';
+import { MapLayer, UiService } from './core/services/ui.service';
 import { PresenceService } from './core/services/presence.service';
 import { PersonReport } from './core/models/models';
 import { CRISIS_SINCE, statusColor, timeAgo } from './core/util/labels';
@@ -171,6 +171,43 @@ declare var gsap: any;
           </svg>
         }
       </button>
+
+      <!-- ===== Control de capas del mapa (mostrar/ocultar categorías) ===== -->
+      <div class="pointer-events-none absolute right-3 top-[5.5rem] z-[550] flex flex-col items-end gap-2">
+        <button (click)="showLayers.set(!showLayers())" aria-label="Capas del mapa"
+                class="pointer-events-auto icon-btn">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4l9 5-9 5-9-5 9-5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 14l9 5 9-5" />
+          </svg>
+        </button>
+
+        @if (showLayers()) {
+          <div class="pointer-events-auto w-52 rounded-2xl glass-bar p-2 fade-in">
+            <div class="mb-1 flex items-center justify-between px-2 py-1">
+              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--txt-muted)">Capas</span>
+              <button (click)="ui.setAllLayers(!allLayersOn())"
+                      class="rounded-full px-2.5 py-0.5 text-[11px] font-bold transition active:scale-95"
+                      style="background: var(--chip-bg); color: var(--txt)">
+                {{ allLayersOn() ? 'Ocultar todo' : 'Ver todo' }}
+              </button>
+            </div>
+            @for (l of layerItems; track l.key) {
+              <button (click)="ui.toggleLayer(l.key)"
+                      class="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-black/5"
+                      [style.opacity]="ui.layers()[l.key] ? '1' : '.45'">
+                <span class="text-base leading-none">{{ l.icon }}</span>
+                <span class="flex-1 text-[13px] font-semibold" style="color: var(--txt)">{{ l.label }}</span>
+                <span class="relative inline-block h-4 w-7 shrink-0 rounded-full transition-colors"
+                      [style.background]="ui.layers()[l.key] ? 'var(--c-info)' : 'var(--chip-bg)'">
+                  <span class="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all"
+                        [style.left]="ui.layers()[l.key] ? '14px' : '2px'"></span>
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </div>
 
       <!-- ===== Recientes — dos listas apiladas (Desaparecidos / A salvo) ===== -->
       @if (!ui.sheet()) {
@@ -389,6 +426,22 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   showSplash = signal(true);
   fadeSplash = signal(false);
+
+  /** Panel de capas del mapa (mostrar/ocultar categorías de marcadores). */
+  showLayers = signal(false);
+
+  /** Categorías conmutables que se listan en el control de capas. */
+  readonly layerItems: { key: MapLayer; label: string; icon: string }[] = [
+    { key: 'personas',   label: 'Personas',   icon: '👤' },
+    { key: 'hospitales', label: 'Hospitales', icon: '🏥' },
+    { key: 'refugios',   label: 'Refugios',   icon: '🏠' },
+    { key: 'acopios',    label: 'Acopio',     icon: '📦' },
+    { key: 'edificios',  label: 'Edificios',  icon: '🏚️' },
+    { key: 'sismos',     label: 'Sismos',     icon: '⚡' },
+  ];
+
+  /** true si TODAS las capas están visibles (para el botón Todo/Nada). */
+  readonly allLayersOn = computed(() => Object.values(this.ui.layers()).every(Boolean));
 
   /** Modal de bienvenida/aviso: se muestra SIEMPRE al cargar, hasta que el usuario acepta. */
   showIntro = signal(false);

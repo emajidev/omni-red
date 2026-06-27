@@ -69,12 +69,13 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private static readonly INITIAL_ZOOM = 8;
 
   constructor() {
-    // Rebuild markers whenever the data changes.
+    // Rebuild markers whenever the data — o las capas visibles — cambian.
     effect(() => {
       const people = this.data.people();
       const centers = this.data.centers();
       const quakes = this.data.quakes();
       const buildings = this.data.edificios();
+      this.ui.layers(); // dependencia: re-render al conmutar capas
       if (this.map) this.renderMarkers(people, centers, quakes, buildings);
     });
 
@@ -306,10 +307,15 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.buildingsLayer.clearLayers();
     this.markersById.clear();
 
+    // Capas visibles (control de mostrar/ocultar categorías).
+    const vis = this.ui.layers();
+
     // Epicentros de sismos (datos del endpoint /sismos).
     // El mapa solo muestra los de la crisis actual (desde CRISIS_SINCE);
     // el histórico (botón Sismos) los muestra todos.
-    const crisisQuakes = quakes.filter((q) => new Date(q.ocurrido_en) >= CRISIS_SINCE);
+    const crisisQuakes = vis.sismos
+      ? quakes.filter((q) => new Date(q.ocurrido_en) >= CRISIS_SINCE)
+      : [];
     // Los DOS de mayor magnitud se resaltan: marcador más grande + etiqueta fija.
     const topQuakeIds = new Set(
       [...crisisQuakes].sort((a, b) => b.magnitud - a.magnitud).slice(0, 2).map((q) => q.id)
@@ -350,20 +356,26 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       this.markersById.set(q.id, marker);
     }
 
-    for (const p of people) {
-      const isMissing = p.estado === 'desaparecido';
-      const cls = isMissing
-        ? 'omni-pin omni-pin--alert omni-pin--pulse'
-        : p.estado === 'encontrado' ? 'omni-pin omni-pin--safe' : 'omni-pin';
-      const marker = L.marker([p.lat, p.lng], {
-        omniStatus: p.estado,
-        icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
-      }).bindPopup(this.personPopup(p), { maxWidth: 280 });
-      marker.addTo(this.peopleLayer);
-      this.markersById.set(p.id, marker);
+    if (vis.personas) {
+      for (const p of people) {
+        const isMissing = p.estado === 'desaparecido';
+        const cls = isMissing
+          ? 'omni-pin omni-pin--alert omni-pin--pulse'
+          : p.estado === 'encontrado' ? 'omni-pin omni-pin--safe' : 'omni-pin';
+        const marker = L.marker([p.lat, p.lng], {
+          omniStatus: p.estado,
+          icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
+        }).bindPopup(this.personPopup(p), { maxWidth: 280 });
+        marker.addTo(this.peopleLayer);
+        this.markersById.set(p.id, marker);
+      }
     }
 
     for (const c of centers) {
+      // Cada tipo de sitio tiene su propia capa conmutable.
+      const centerVisible = c.tipo === 'hospital' ? vis.hospitales
+        : c.tipo === 'refugio' ? vis.refugios : vis.acopios;
+      if (!centerVisible) continue;
       const emoji = c.tipo === 'hospital' ? '🏥' : c.tipo === 'refugio' ? '🏠' : '📦';
       const marker = L.marker([c.lat, c.lng], {
         omniType: 'center',
@@ -380,20 +392,22 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
     // Edificios afectados (estructuras dañadas / colapsadas). Halo por nivel de
     // daño; latido cuando hay personas atrapadas y el rescate sigue en curso.
-    for (const b of buildings) {
-      const trapped = b.personas_atrapadas > 0 && b.estado !== 'despejado';
-      const cls = `omni-building omni-building--${b.nivel_dano}${trapped ? ' omni-building--trapped' : ''}`;
-      const marker = L.marker([b.lat, b.lng], {
-        omniType: 'building',
-        icon: L.divIcon({
-          className: '',
-          html: `<div class="${cls}">🏚️</div>`,
-          iconSize: [26, 26],
-          iconAnchor: [13, 13]
-        })
-      }).bindPopup(this.buildingPopup(b), { maxWidth: 280 });
-      marker.addTo(this.buildingsLayer);
-      this.markersById.set(b.id, marker);
+    if (vis.edificios) {
+      for (const b of buildings) {
+        const trapped = b.personas_atrapadas > 0 && b.estado !== 'despejado';
+        const cls = `omni-building omni-building--${b.nivel_dano}${trapped ? ' omni-building--trapped' : ''}`;
+        const marker = L.marker([b.lat, b.lng], {
+          omniType: 'building',
+          icon: L.divIcon({
+            className: '',
+            html: `<div class="${cls}">🏚️</div>`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+          })
+        }).bindPopup(this.buildingPopup(b), { maxWidth: 280 });
+        marker.addTo(this.buildingsLayer);
+        this.markersById.set(b.id, marker);
+      }
     }
   }
 

@@ -8,6 +8,11 @@ export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugi
 export type Theme = 'light' | 'dark';
 const THEME_KEY = 'somosuno-theme';
 
+/** Capas conmutables del mapa (qué categorías de marcadores se muestran). */
+export type MapLayer =
+  | 'personas' | 'hospitales' | 'refugios' | 'acopios' | 'edificios' | 'sismos';
+const LAYERS_KEY = 'somosuno-layers';
+
 export interface Toast {
   id: number;
   text: string;
@@ -76,6 +81,45 @@ export class UiService {
       root.classList.add(theme);
     }
     try { localStorage.setItem(THEME_KEY, theme); } catch { /* private mode */ }
+  }
+
+  // --- Capas del mapa -------------------------------------------------------
+  /** Qué categorías de marcadores se muestran en el mapa (persistido). */
+  readonly layers = signal<Record<MapLayer, boolean>>(this.readInitialLayers());
+
+  private readInitialLayers(): Record<MapLayer, boolean> {
+    const def: Record<MapLayer, boolean> = {
+      personas: true, hospitales: true, refugios: true,
+      acopios: true, edificios: true, sismos: true,
+    };
+    try {
+      const raw = localStorage.getItem(LAYERS_KEY);
+      if (raw) return { ...def, ...(JSON.parse(raw) as Partial<Record<MapLayer, boolean>>) };
+    } catch { /* private mode / JSON inválido */ }
+    return def;
+  }
+
+  private persistLayers(next: Record<MapLayer, boolean>): void {
+    try { localStorage.setItem(LAYERS_KEY, JSON.stringify(next)); } catch { /* private mode */ }
+  }
+
+  /** Muestra/oculta una capa del mapa. */
+  toggleLayer(layer: MapLayer): void {
+    this.layers.update((l) => {
+      const next = { ...l, [layer]: !l[layer] };
+      this.persistLayers(next);
+      return next;
+    });
+  }
+
+  /** Enciende/apaga todas las capas a la vez. */
+  setAllLayers(on: boolean): void {
+    const next: Record<MapLayer, boolean> = {
+      personas: on, hospitales: on, refugios: on,
+      acopios: on, edificios: on, sismos: on,
+    };
+    this.persistLayers(next);
+    this.layers.set(next);
   }
 
   open(sheet: Exclude<Sheet, null>): void {

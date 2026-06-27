@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
+import { PaginatorComponent } from '../../shared/paginator/paginator.component';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { timeAgo } from '../../core/util/labels';
@@ -9,13 +10,13 @@ import { timeAgo } from '../../core/util/labels';
   selector: 'app-sismos-sheet',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BottomSheetComponent],
+  imports: [BottomSheetComponent, PaginatorComponent],
   template: `
     <app-bottom-sheet title="Histórico de sismos" subtitle="Todos los eventos registrados (USGS)"
                       icon="globe" accentBg="bg-warnbg text-warn" (close)="ui.close()">
 
       <ol class="relative space-y-3 border-l-2 pl-5 ml-2 mt-1" style="border-color: var(--divider)">
-        @for (q of quakes(); track q.id) {
+        @for (q of pagedQuakes(); track q.id) {
           <li class="relative fade-in">
             <span class="absolute -left-[27px] top-1.5 grid h-3.5 w-3.5 place-items-center rounded-full ring-4"
                   style="box-shadow:0 0 0 4px var(--sheet)"
@@ -38,6 +39,9 @@ import { timeAgo } from '../../core/util/labels';
           <li class="text-sm" style="color: var(--txt-muted)">No hay sismos registrados.</li>
         }
       </ol>
+
+      <app-paginator [total]="quakes().length" [page]="page()" [pageSize]="size()"
+                     (pageChange)="page.set($event)" (pageSizeChange)="onSize($event)" />
     </app-bottom-sheet>
   `
 })
@@ -47,6 +51,15 @@ export class SismosSheetComponent {
 
   /** Todos los sismos, más recientes primero (la API ya ordena por fecha desc). */
   quakes = computed(() => this.data.quakes());
+
+  // Paginación (cliente)
+  readonly page = signal(1);
+  readonly size = signal(20);
+  readonly pagedQuakes = computed(() => {
+    const start = (this.page() - 1) * this.size();
+    return this.quakes().slice(start, start + this.size());
+  });
+  onSize(n: number): void { this.size.set(n); this.page.set(1); }
 
   dot(mag: number): string {
     return mag >= 5 ? 'var(--c-alert)' : mag >= 4 ? 'var(--c-warn)' : '#94a3b8';

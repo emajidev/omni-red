@@ -7,13 +7,15 @@ import {
   CenterCapacity,
   CollapsedBuilding,
   ExternalPerson,
+  FvivemasMetrics,
   Metrics,
   NewBuildingRow,
   NewCenter,
   NewCenterRow,
   NewReport,
+  PagedPersonas,
+  PersonasQuery,
   PersonReport,
-  PersonStatus,
   Quake,
   ReliefCenter,
   ReportResult,
@@ -45,11 +47,27 @@ export class ApiService {
   private base = environment.apiBaseUrl;
 
   // ---- Personas ------------------------------------------------------------
-  getPersonas(estado?: PersonStatus): Promise<PersonReport[]> {
-    const url = estado
-      ? `${this.base}/personas?estado=${encodeURIComponent(estado)}`
-      : `${this.base}/personas`;
-    return firstValueFrom(this.http.get<PersonReport[]>(url));
+  /** Listado PAGINADO de personas (búsqueda + filtros). */
+  getPersonas(query: PersonasQuery = {}): Promise<PagedPersonas> {
+    const p = new URLSearchParams();
+    if (query.page != null) p.set('page', String(query.page));
+    if (query.size != null) p.set('size', String(query.size));
+    if (query.q) p.set('q', query.q);
+    if (query.estado) p.set('estado', query.estado);
+    if (query.ubicacion) p.set('ubicacion', query.ubicacion);
+    if (query.centroId) p.set('centroId', query.centroId);
+    if (query.tipo) p.set('tipo', query.tipo);
+    const qs = p.toString();
+    return firstValueFrom(
+      this.http.get<PagedPersonas>(`${this.base}/personas${qs ? '?' + qs : ''}`),
+    );
+  }
+
+  /** Todas las personas (sin paginar) — para el mapa, métricas y sidebars. */
+  getAllPersonas(): Promise<PersonReport[]> {
+    return firstValueFrom(
+      this.http.get<PagedPersonas>(`${this.base}/personas?all=1`),
+    ).then((r) => r.data);
   }
 
   createPersona(payload: NewReport): Promise<ReportResult> {
@@ -93,6 +111,16 @@ export class ApiService {
       this.http.get<ExternalPerson[]>(
         `${this.base}/personas/external?q=${encodeURIComponent(q)}`,
       ),
+    );
+  }
+
+  /**
+   * Totales del registro externo (fvivemas) para los pills del dashboard:
+   * total / desaparecidos / localizados (solo reportes de búsqueda).
+   */
+  getExternalMetrics(): Promise<FvivemasMetrics> {
+    return firstValueFrom(
+      this.http.get<FvivemasMetrics>(`${this.base}/personas/external/metrics`),
     );
   }
 

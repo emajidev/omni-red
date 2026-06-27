@@ -139,7 +139,7 @@ declare var gsap: any;
             <span class="flex items-center gap-1.5 px-3 py-1 bg-[#22c55e]/20 text-[#22c55e] border-[0.5px] border-[#22c55e]/30 rounded-full">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().localizados"></span>
-              <span class="lbl font-light uppercase tracking-wider text-[10px]">salvo</span>
+              <span class="lbl font-light uppercase tracking-wider text-[10px]">Encontrados</span>
             </span>
             <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#3b82f6]/20 text-[#3b82f6] border-[0.5px] border-[#3b82f6]/30 rounded-full">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
@@ -200,7 +200,7 @@ declare var gsap: any;
           <!-- A salvo -->
           <div class="recent-head">
             <span class="h-2 w-2 rounded-full" style="background: var(--c-safe)"></span>
-            <span class="title">A salvo</span>
+            <span class="title">Encontrados</span>
             <span class="count">{{ safePeople().length }}</span>
           </div>
           <div class="max-h-[28vh] overflow-y-auto px-2 pb-2">
@@ -213,7 +213,7 @@ declare var gsap: any;
                 </div>
               </div>
             } @empty {
-              <div class="px-3 py-5 text-center text-[11px]" style="color: var(--txt-muted)">Sin reportes a salvo</div>
+              <div class="px-3 py-5 text-center text-[11px]" style="color: var(--txt-muted)">Sin reportes de encontrados</div>
             }
           </div>
 

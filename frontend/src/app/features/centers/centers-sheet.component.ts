@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
+import { PaginatorComponent } from '../../shared/paginator/paginator.component';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { CAPACITY_CHIP, CAPACITY_LABEL } from '../../core/util/labels';
@@ -11,7 +12,7 @@ import { PLACES } from '../../core/data/places';
   selector: 'app-centers-sheet',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BottomSheetComponent, ReactiveFormsModule],
+  imports: [BottomSheetComponent, ReactiveFormsModule, PaginatorComponent],
   template: `
     <app-bottom-sheet title="Centros de acopio" subtitle="Puntos activos y registro de nuevos"
                       icon="hospital" accentBg="bg-infobg text-info" (close)="ui.close()">
@@ -34,7 +35,7 @@ import { PLACES } from '../../core/data/places';
 
       @if (tab() === 'list') {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          @for (c of data.acopios(); track c.id) {
+          @for (c of pagedAcopios(); track c.id) {
             <button (click)="focus(c)"
                     class="rounded-2xl p-4 text-left ring-1 active:scale-[.99] transition fade-in"
                     style="background: var(--sheet-inset); border-color: var(--glass-border); --tw-ring-color: var(--glass-border)">
@@ -61,6 +62,9 @@ import { PLACES } from '../../core/data/places';
             <div class="col-span-full py-8 text-center text-sm" style="color: var(--txt-muted)">No hay centros registrados aún.</div>
           }
         </div>
+
+        <app-paginator [total]="data.acopios().length" [page]="page()" [pageSize]="size()"
+                       (pageChange)="page.set($event)" (pageSizeChange)="onSize($event)" />
       } @else {
         <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-3">
           <!-- Nombre del centro -->
@@ -119,6 +123,15 @@ export class CentersSheetComponent {
   readonly places = PLACES;
   readonly tab = signal<'list' | 'add'>('list');
   readonly saving = signal(false);
+
+  // Paginación (cliente) de la lista de centros
+  readonly page = signal(1);
+  readonly size = signal(20);
+  readonly pagedAcopios = computed(() => {
+    const start = (this.page() - 1) * this.size();
+    return this.data.acopios().slice(start, start + this.size());
+  });
+  onSize(n: number): void { this.size.set(n); this.page.set(1); }
 
   form = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],

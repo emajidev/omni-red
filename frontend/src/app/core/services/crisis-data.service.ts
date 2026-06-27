@@ -2,8 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiService, DuplicateFlag } from './api.service';
 import {
   BatchUploadResult, CenterCapacity, CollapsedBuilding, ReliefCenter, Metrics,
-  NewBuildingRow, NewCenter, NewCenterRow, NewReport,
-  ExternalPerson, OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
+  NewBuildingRow, NewCenter, NewCenterRow, NewReport, PagedPersonas, PersonasQuery,
+  ExternalPerson, FvivemasMetrics, OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
 } from '../models/models';
 
 /**
@@ -40,6 +40,14 @@ export class CrisisDataService {
   readonly external = signal<ExternalPerson[]>([]);
   private externalSeq = 0;
 
+  /**
+   * Totales del registro EXTERNO de fvivemas (solo reportes de búsqueda) que
+   * alimentan los pills del dashboard: total / desaparecidos / localizados.
+   * Se cargan en {@link loadAll}; si la fuente falla queda en `null` y las
+   * métricas caen al cálculo sobre la BD propia.
+   */
+  readonly externalMetrics = signal<FvivemasMetrics | null>(null);
+
   // --- Derived: sitios por tipo ---------------------------------------------
   readonly acopios = computed(() => this.centers().filter((c) => c.tipo === 'acopio'));
   readonly refugios = computed(() => this.centers().filter((c) => c.tipo === 'refugio'));
@@ -48,13 +56,20 @@ export class CrisisDataService {
   /** The app always consumes real data from the API now. */
   readonly isLive = true;
 
-  /** Derived metrics (computed from the loaded data). */
+  /**
+   * Derived metrics (computed from the loaded data). Los totales de personas
+   * (total / desaparecidos / localizados) provienen del registro EXTERNO de
+   * fvivemas ({@link externalMetrics}); si esa fuente no cargó, caen al cálculo
+   * sobre la BD propia. El resto de pills (centros, sismos) siguen siendo
+   * locales.
+   */
   readonly metrics = computed<Metrics>(() => {
     const p = this.people();
+    const ext = this.externalMetrics();
     return {
-      total_reportados: p.length,
-      desaparecidos: p.filter((x) => x.estado === 'desaparecido').length,
-      localizados: p.filter((x) => x.estado === 'encontrado').length,
+      total_reportados: ext?.total_reportados ?? p.length,
+      desaparecidos: ext?.desaparecidos ?? p.filter((x) => x.estado === 'desaparecido').length,
+      localizados: ext?.localizados ?? p.filter((x) => x.estado === 'encontrado').length,
       criticos: p.filter((x) => x.estado === 'desaparecido' && x.veces_reportado >= 2).length,
       centros_activos: this.centers().filter((c) => c.tipo === 'acopio' && c.capacidad !== 'cerrado').length,
       sismos_24h: this.quakes().filter(
@@ -69,20 +84,35 @@ export class CrisisDataService {
   async loadAll(): Promise<void> {
     this.loading.set(true);
     try {
-      const [people, centers, quakes, edificios] = await Promise.all([
-        this.api.getPersonas(),
+      const [people, centers, quakes, edificios, extMetrics] = await Promise.all([
+        this.api.getAllPersonas(),
         this.api.getCentros(),
         this.api.getSismos(),
         // Resiliente: si el endpoint aún no está desplegado, no rompe la carga.
         this.api.getEdificios().catch(() => [] as CollapsedBuilding[]),
+        // Totales de fvivemas para los pills; ante fallo deja las métricas locales.
+        this.api.getExternalMetrics().catch(() => null),
       ]);
       this.people.set(people);
       this.centers.set(centers);
       this.quakes.set(quakes);
       this.edificios.set(edificios);
+      this.externalMetrics.set(extMetrics);
     } finally {
       this.loading.set(false);
     }
+  }
+
+  // ==========================================================================
+  // Listado paginado de personas (búsqueda + filtros, lado servidor)
+  // ==========================================================================
+  /**
+   * Consulta el listado paginado de personas (búsqueda por nombre/cédula y
+   * filtros por estado/ubicación/sitio). No toca el estado global `people()`
+   * (que sigue siendo el conjunto completo para el mapa y las métricas).
+   */
+  searchPersonas(query: PersonasQuery): Promise<PagedPersonas> {
+    return this.api.getPersonas(query);
   }
 
   /**

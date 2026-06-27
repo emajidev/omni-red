@@ -40,24 +40,53 @@ export interface PersonReport {
   created_at: string; // ISO
 }
 
+/** Desglose por estado del contexto de búsqueda (lo devuelve el listado paginado). */
+export interface PersonasTotals {
+  personas: number;
+  encontrados: number;
+  desaparecidos: number;
+  fallecidos: number;
+  desconocidos: number;
+}
+
+/** Respuesta paginada del listado de personas (GET /api/personas). */
+export interface PagedPersonas {
+  data: PersonReport[];
+  page: number;
+  size: number;
+  total: number;        // filas que matchean TODOS los filtros (incl. estado)
+  totalPages: number;
+  totals: PersonasTotals;
+}
+
+/** Parámetros de consulta del listado paginado de personas. */
+export interface PersonasQuery {
+  page?: number;
+  size?: number;
+  q?: string;
+  estado?: PersonStatus;
+  ubicacion?: string;
+  centroId?: string;
+  tipo?: 'hospital' | 'refugio';
+}
+
 /**
- * Persona localizada en el registro médico EXTERNO de fvivemas
- * (colección Firestore `medical_cases` del proyecto asistencia-medica-fvivemas,
- * lectura pública). Solo lectura: se usa como *fallback* del buscador cuando no
- * hay coincidencias en nuestra propia BD. NO entra en métricas ni se dibuja
- * como marcador en el mapa.
+ * Persona localizada en una fuente EXTERNA (registro médico de fvivemas o el
+ * agregador ayuda-api). Solo lectura: se usa como *fallback* del buscador
+ * cuando no hay coincidencias en nuestra propia BD. NO se dibuja como marcador
+ * en el mapa.
  */
 export interface ExternalPerson {
-  id: string;               // 'fvivemas:<docId>'
+  id: string;               // '<fuente>:<docId>'
   nombre: string;           // name + lastName
   cedula: string | null;    // idCard ('' → null)
   edad?: number | null;     // age
-  ubicacion: string;        // hospitalName
+  ubicacion: string;        // hospitalName / lugar
   lat: number | null;       // coordinates.lat
   lng: number | null;       // coordinates.lng
   telefono_contacto?: string | null; // contact.reporterPhone[0]
-  detalle?: string | null;  // diagnosis · healthStatus
-  fuente: 'fvivemas';
+  detalle?: string | null;  // diagnosis · healthStatus / estado · texto
+  fuente: 'fvivemas' | 'ayuda';
   created_at: string;       // createdAt (ISO)
 }
 
@@ -95,6 +124,17 @@ export interface Metrics {
   criticos: number;
   centros_activos: number;
   sismos_24h: number;
+}
+
+/**
+ * Totales del registro médico EXTERNO de fvivemas para los pills del dashboard.
+ * Se calculan SOLO sobre los reportes de búsqueda de personas (`caseType`
+ * `request`): total, desaparecidos (búsqueda activa) y localizados (resueltos).
+ */
+export interface FvivemasMetrics {
+  total_reportados: number;
+  desaparecidos: number;
+  localizados: number;
 }
 
 /** Payload to create/merge a report (RPC reportar_persona). */

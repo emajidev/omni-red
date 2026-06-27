@@ -98,11 +98,13 @@ begin
     -- DESDUPLICACIÓN: unificamos en lugar de crear un pin nuevo.
     update public.reportes_personas
        set veces_reportado = v_existente.veces_reportado + 1,
-           -- "a_salvo" gana prioridad informativa sobre "desaparecido"
-           estado    = case when p_estado = 'a_salvo' then 'a_salvo' else estado end,
+           -- "encontrado" gana prioridad informativa sobre "desaparecido"
+           estado    = case when p_estado = 'encontrado' then 'encontrado' else estado end,
            ubicacion = coalesce(nullif(p_ubicacion, ''), ubicacion),
            lat       = p_lat,
            lng       = p_lng,
+           -- rellena la edad si no se tenía; conserva la existente si ya hay una
+           edad      = coalesce(edad, p_edad),
            detalle   = coalesce(nullif(p_detalle, ''), detalle),
            updated_at = now()
      where id = v_existente.id
@@ -234,7 +236,7 @@ as $$
   select json_build_object(
     'total_reportados', (select count(*) from public.reportes_personas),
     'desaparecidos',    (select count(*) from public.reportes_personas where estado = 'desaparecido'),
-    'localizados',      (select count(*) from public.reportes_personas where estado = 'a_salvo'),
+    'localizados',      (select count(*) from public.reportes_personas where estado = 'encontrado'),
     'criticos',         (select count(*) from public.reportes_personas
                           where estado = 'desaparecido' and veces_reportado >= 2),
     'centros_activos',  (select count(*) from public.centros_acopio where capacidad <> 'cerrado'),

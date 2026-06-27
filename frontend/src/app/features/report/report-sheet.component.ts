@@ -37,11 +37,11 @@ function cedulaValidator(c: AbstractControl): ValidationErrors | null {
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             Desaparecido
           </button>
-          <button type="button" (click)="setStatus('a_salvo')"
+          <button type="button" (click)="setStatus('encontrado')"
                   class="flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold ring-1 shadow-sm transition-all"
                   [class]="isSafe() ? 'bg-gradient-to-tr from-green-600 to-green-400 text-white ring-transparent shadow-[0_4px_16px_rgba(22,163,74,0.3)]' : 'bg-white text-slate-500 ring-black/5 hover:bg-slate-50'">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            A salvo
+            Encontrado
           </button>
         </div>
 
@@ -160,7 +160,7 @@ export class ReportSheetComponent implements OnInit {
   readonly places = PLACES;
   readonly saving = signal(false);
   readonly status = signal<PersonStatus>('desaparecido');
-  isSafe = () => this.status() === 'a_salvo';
+  isSafe = () => this.status() === 'encontrado';
   
   readonly showSuggestions = signal(false);
   readonly fotoPreview = signal<string | null>(null);

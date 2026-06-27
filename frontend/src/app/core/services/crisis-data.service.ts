@@ -1,10 +1,17 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ApiService } from './api.service';
+import { ApiService, DuplicateFlag } from './api.service';
 import {
   BatchUploadResult, CenterCapacity, CollapsedBuilding, ReliefCenter, Metrics,
   NewBuildingRow, NewCenter, NewCenterRow, NewReport,
-  OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
+  ExternalPerson, OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
 } from '../models/models';
+
+/**
+ * Tamaño de lote para subir/desduplicar listas grandes. Evita que la petición
+ * exceda el límite de tamaño del backend (PayloadTooLarge) y permite mostrar
+ * el avance "X de N" en la interfaz.
+ */
+export const OCR_BATCH_SIZE = 100;
 
 /**
  * Data facade for OmniRed. Components talk only to this service. Internally it
@@ -24,6 +31,15 @@ export class CrisisDataService {
   readonly edificios = signal<CollapsedBuilding[]>([]);
   readonly loading = signal<boolean>(true);
 
+  /**
+   * Resultados del registro médico EXTERNO de fvivemas para el término de
+   * búsqueda actual (solo lectura). La fuente y la lógica viven en el backend
+   * ({@link ApiService.searchExternal}); aquí solo cacheamos la última
+   * respuesta. NO entra en {@link metrics} ni en el mapa.
+   */
+  readonly external = signal<ExternalPerson[]>([]);
+  private externalSeq = 0;
+
   // --- Derived: sitios por tipo ---------------------------------------------
   readonly acopios = computed(() => this.centers().filter((c) => c.tipo === 'acopio'));
   readonly refugios = computed(() => this.centers().filter((c) => c.tipo === 'refugio'));
@@ -38,7 +54,7 @@ export class CrisisDataService {
     return {
       total_reportados: p.length,
       desaparecidos: p.filter((x) => x.estado === 'desaparecido').length,
-      localizados: p.filter((x) => x.estado === 'a_salvo').length,
+      localizados: p.filter((x) => x.estado === 'encontrado').length,
       criticos: p.filter((x) => x.estado === 'desaparecido' && x.veces_reportado >= 2).length,
       centros_activos: this.centers().filter((c) => c.tipo === 'acopio' && c.capacidad !== 'cerrado').length,
       sismos_24h: this.quakes().filter(
@@ -69,6 +85,27 @@ export class CrisisDataService {
     }
   }
 
+  /**
+   * Busca en el registro médico externo (fvivemas) vía backend y publica el
+   * resultado en {@link external}. Resiliente: ante fallo deja la lista vacía.
+   * Guard anti-carrera: si llegan respuestas desordenadas, solo aplica la de la
+   * última petición.
+   */
+  async searchExternal(q: string): Promise<void> {
+    const term = (q ?? '').trim();
+    if (term.length < 2) {
+      this.external.set([]);
+      return;
+    }
+    const seq = ++this.externalSeq;
+    try {
+      const res = await this.api.searchExternal(term);
+      if (seq === this.externalSeq) this.external.set(res);
+    } catch {
+      if (seq === this.externalSeq) this.external.set([]);
+    }
+  }
+
   // ==========================================================================
   // Write: report a person (server validates + deduplicates)
   // ==========================================================================
@@ -81,13 +118,21 @@ export class CrisisDataService {
   // ==========================================================================
   // OCR: server-side duplicate detection against the live base
   // ==========================================================================
-  /** Flags each extracted row as duplicate or new (server cross-check). */
+  /**
+   * Flags each extracted row as duplicate or new (server cross-check). La
+   * comprobación se envía por lotes ({@link OCR_BATCH_SIZE}) para no exceder el
+   * límite de tamaño de petición del backend con listas grandes.
+   */
   async analyzeOcrDuplicates(
-    rows: { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string }[]
+    rows: { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string; edad?: number | null }[]
   ): Promise<OcrRecord[]> {
-    const flags = await this.api.checkDuplicates(
-      rows.map((r) => ({ nombre: r.nombre, cedula: r.cedula }))
-    );
+    const flags: DuplicateFlag[] = [];
+    for (let i = 0; i < rows.length; i += OCR_BATCH_SIZE) {
+      const slice = rows
+        .slice(i, i + OCR_BATCH_SIZE)
+        .map((r) => ({ nombre: r.nombre, cedula: r.cedula }));
+      flags.push(...(await this.api.checkDuplicates(slice)));
+    }
     return rows.map((r, i) => ({
       ...r,
       isDuplicate: flags[i]?.isDuplicate ?? false,
@@ -95,16 +140,34 @@ export class CrisisDataService {
     }));
   }
 
-  /** Saves the OCR-extracted rows in one batch (server merges duplicates). */
-  async saveOcrRecords(rows: OcrRecord[]): Promise<{ added: number; merged: number }> {
+  /**
+   * Guarda los registros extraídos (OCR/CSV) en LOTES (el servidor unifica
+   * duplicados). Divide el envío en bloques de {@link OCR_BATCH_SIZE} para no
+   * exceder el límite de tamaño de petición del backend, e informa el avance
+   * vía `onProgress(cargados, total)`.
+   */
+  async saveOcrRecords(
+    rows: OcrRecord[],
+    onProgress?: (done: number, total: number) => void
+  ): Promise<{ added: number; merged: number }> {
     const registros: NewReport[] = rows.map((r) => ({
-      nombre: r.nombre, cedula: r.cedula, estado: r.estado,
+      nombre: r.nombre, cedula: r.cedula, estado: r.estado, edad: r.edad ?? null,
       ubicacion: r.ubicacion, lat: this.jitter(10.4225), lng: this.jitter(-66.9510),
       fuente: 'ocr_lista', reportado_por: 'carga_ocr'
     }));
-    const res = await this.api.createBatch(registros);
+    const total = registros.length;
+    let added = 0;
+    let merged = 0;
+    onProgress?.(0, total);
+    for (let i = 0; i < total; i += OCR_BATCH_SIZE) {
+      const slice = registros.slice(i, i + OCR_BATCH_SIZE);
+      const res = await this.api.createBatch(slice);
+      added += res.added;
+      merged += res.merged;
+      onProgress?.(Math.min(i + slice.length, total), total);
+    }
     await this.loadAll();
-    return { added: res.added, merged: res.merged };
+    return { added, merged };
   }
 
   // ==========================================================================

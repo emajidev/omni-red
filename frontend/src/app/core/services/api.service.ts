@@ -6,6 +6,7 @@ import {
   BatchUploadResult,
   CenterCapacity,
   CollapsedBuilding,
+  ExternalPerson,
   Metrics,
   NewBuildingRow,
   NewCenter,
@@ -79,6 +80,19 @@ export class ApiService {
   createBatch(registros: NewReport[]): Promise<BatchResult> {
     return firstValueFrom(
       this.http.post<BatchResult>(`${this.base}/personas/batch`, { registros }),
+    );
+  }
+
+  /**
+   * Fallback de búsqueda contra el registro médico externo (fvivemas). La
+   * fuente y sus credenciales viven en el backend; aquí solo enviamos el
+   * término. Devuelve [] con menos de 2 caracteres.
+   */
+  searchExternal(q: string): Promise<ExternalPerson[]> {
+    return firstValueFrom(
+      this.http.get<ExternalPerson[]>(
+        `${this.base}/personas/external?q=${encodeURIComponent(q)}`,
+      ),
     );
   }
 

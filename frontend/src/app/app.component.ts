@@ -251,12 +251,12 @@ declare var gsap: any;
             <span class="lbl">Reportar</span>
           </button>
 
-          <!-- Item 2.5: Encontrados (A Salvo) -->
-          <button (click)="ui.openReport('a_salvo')" class="nav-btn" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'a_salvo'" style="color: var(--c-safe)">
+          <!-- Item 2.5: Encontrados -->
+          <button (click)="ui.openReport('encontrado')" class="nav-btn" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'encontrado'" style="color: var(--c-safe)">
             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            <span class="lbl">A Salvo</span>
+            <span class="lbl">Encontrados</span>
           </button>
 
           <!-- Extra options for Desktop only -->
@@ -390,7 +390,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.data.people().filter((p) => p.estado === 'desaparecido').slice(0, 40)
   );
   safePeople = computed(() =>
-    this.data.people().filter((p) => p.estado === 'a_salvo').slice(0, 40)
+    this.data.people().filter((p) => p.estado === 'encontrado').slice(0, 40)
   );
 
   /** Estado de alerta sísmica derivado de la magnitud máxima reciente (24h). */

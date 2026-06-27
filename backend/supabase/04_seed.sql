@@ -31,7 +31,7 @@ insert into public.reportes_personas
   (nombre, cedula, estado, edad, ubicacion, lat, lng, fuente, detalle, reportado_por,
    veces_reportado, hash_dedup)
 values
-  ('María Alejandra Rodríguez', 'V-12.345.678', 'a_salvo', 34,
+  ('María Alejandra Rodríguez', 'V-12.345.678', 'encontrado', 34,
    'Refugio Montalbán, Caracas', 10.4225, -66.9510, 'ocr_lista',
    'Reportada a salvo en refugio. Familia notificada.', 'rescate.montalban', 2,
    public.calcular_hash_dedup('V-12.345.678','María Alejandra Rodríguez')),
@@ -46,7 +46,7 @@ values
    'Adulto mayor, requiere medicación para hipertensión.', 'brigada_petare', 1,
    public.calcular_hash_dedup('V-9.876.543','Carmen Teresa Hernández')),
 
-  ('Luis Eduardo González', 'V-18.234.567', 'a_salvo', 27,
+  ('Luis Eduardo González', 'V-18.234.567', 'encontrado', 27,
    'La Guaira, Maiquetía', 10.5940, -66.9870, 'web',
    'Reportó por formulario que está bien.', 'autorreporte', 1,
    public.calcular_hash_dedup('V-18.234.567','Luis Eduardo González')),
@@ -61,7 +61,7 @@ values
    'Salió a comprar agua y no regresó.', 'fam_salazar', 1,
    public.calcular_hash_dedup('V-7.654.321','Pedro Ramón Salazar')),
 
-  ('Andreína Valentina Suárez', 'V-25.333.444', 'a_salvo', 19,
+  ('Andreína Valentina Suárez', 'V-25.333.444', 'encontrado', 19,
    'Chacao, Caracas', 10.4970, -66.8530, 'telegram',
    'A salvo con vecinos, edificio evacuado.', 'consejo_comunal_chacao', 1,
    public.calcular_hash_dedup('V-25.333.444','Andreína Valentina Suárez')),
@@ -71,7 +71,7 @@ values
    'Trabajaba en zona industrial al momento del sismo.', 'autorreporte', 1,
    public.calcular_hash_dedup('V-14.222.888','Wilmer Antonio Bracho')),
 
-  ('Rosángela del Carmen Mora', 'V-16.789.012', 'a_salvo', 36,
+  ('Rosángela del Carmen Mora', 'V-16.789.012', 'encontrado', 36,
    'Valencia, Carabobo', 10.1620, -68.0080, 'ocr_lista',
    'Listada como presente en albergue Naguanagua.', 'albergue_naguanagua', 1,
    public.calcular_hash_dedup('V-16.789.012','Rosángela del Carmen Mora')),
@@ -81,7 +81,7 @@ values
    'Reportado por dos vecinos distintos.', '@guarenasunida', 2,
    public.calcular_hash_dedup('V-11.444.777','Héctor Luis Ramírez')),
 
-  ('Daniela Beatriz Linares', 'V-22.555.666', 'a_salvo', 29,
+  ('Daniela Beatriz Linares', 'V-22.555.666', 'encontrado', 29,
    'Baruta, Caracas', 10.4320, -66.8750, 'telegram',
    'Confirmada sana y salva por su hermana.', 'fam_linares', 1,
    public.calcular_hash_dedup('V-22.555.666','Daniela Beatriz Linares')),
@@ -91,7 +91,7 @@ values
    'Sin contacto, vive solo. Urgente.', 'cruz_roja_tuy', 1,
    public.calcular_hash_dedup('V-8.123.456','Francisco Javier Ovalles')),
 
-  ('Gabriela Alexandra Fermín', 'V-19.876.000', 'a_salvo', 31,
+  ('Gabriela Alexandra Fermín', 'V-19.876.000', 'encontrado', 31,
    'La Victoria, Aragua', 10.2270, -67.3330, 'web',
    'Autorreporte: a salvo en casa de familiares.', 'autorreporte', 1,
    public.calcular_hash_dedup('V-19.876.000','Gabriela Alexandra Fermín')),

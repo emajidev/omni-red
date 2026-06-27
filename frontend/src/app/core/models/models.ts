@@ -6,7 +6,7 @@
  * (types, vars, functions) are in English.
  */
 
-export type PersonStatus = 'desaparecido' | 'a_salvo' | 'fallecido';
+export type PersonStatus = 'desaparecido' | 'encontrado' | 'fallecido' | 'desconocido';
 
 export type ReportSource =
   | 'twitter' | 'telegram' | 'web' | 'ocr_lista' | 'llamada' | 'whatsapp';
@@ -38,6 +38,27 @@ export interface PersonReport {
   foto_url?: string | null;
   centro_id?: string | null;   // sitio (hospital/refugio) donde está la persona
   created_at: string; // ISO
+}
+
+/**
+ * Persona localizada en el registro médico EXTERNO de fvivemas
+ * (colección Firestore `medical_cases` del proyecto asistencia-medica-fvivemas,
+ * lectura pública). Solo lectura: se usa como *fallback* del buscador cuando no
+ * hay coincidencias en nuestra propia BD. NO entra en métricas ni se dibuja
+ * como marcador en el mapa.
+ */
+export interface ExternalPerson {
+  id: string;               // 'fvivemas:<docId>'
+  nombre: string;           // name + lastName
+  cedula: string | null;    // idCard ('' → null)
+  edad?: number | null;     // age
+  ubicacion: string;        // hospitalName
+  lat: number | null;       // coordinates.lat
+  lng: number | null;       // coordinates.lng
+  telefono_contacto?: string | null; // contact.reporterPhone[0]
+  detalle?: string | null;  // diagnosis · healthStatus
+  fuente: 'fvivemas';
+  created_at: string;       // createdAt (ISO)
 }
 
 /** Row of `centros_acopio` (acopio, refugio u hospital según `tipo`). */
@@ -164,6 +185,7 @@ export interface OcrRecord {
   cedula: string | null;
   estado: PersonStatus;
   ubicacion: string;
+  edad?: number | null;
   /** true if the dedup engine flagged it as already existing. */
   isDuplicate: boolean;
   /** id of the existing report it collides with (when duplicate). */

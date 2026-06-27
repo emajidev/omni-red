@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export const ESTADOS = ['desaparecido', 'a_salvo', 'fallecido'] as const;
+export const ESTADOS = ['desaparecido', 'encontrado', 'fallecido', 'desconocido'] as const;
 export const FUENTES = [
   'twitter',
   'telegram',

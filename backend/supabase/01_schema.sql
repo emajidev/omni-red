@@ -14,7 +14,7 @@ create extension if not exists "pg_trgm";      -- búsqueda fuzzy por similitud 
 
 -- Estado de una persona reportada.
 do $$ begin
-  create type estado_persona as enum ('desaparecido', 'a_salvo', 'fallecido');
+  create type estado_persona as enum ('desaparecido', 'encontrado', 'fallecido', 'desconocido');
 exception when duplicate_object then null; end $$;
 
 -- Fuente de origen del reporte (scraping / OCR / web).

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
-import { CrisisDataService } from '../../core/services/crisis-data.service';
+import { CrisisDataService, OCR_BATCH_SIZE } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import {
   BuildingStatus, CenterType, DamageLevel,
@@ -15,7 +15,7 @@ type Tab = 'imagen' | 'csv';
 /** Qué tipo de lista se está cargando por CSV. */
 type CsvKind = 'personas' | 'acopio' | 'hospital' | 'edificio';
 
-const VALID_ESTADOS: PersonStatus[] = ['desaparecido', 'a_salvo', 'fallecido'];
+const VALID_ESTADOS: PersonStatus[] = ['desaparecido', 'encontrado', 'fallecido', 'desconocido'];
 const VALID_DANO: DamageLevel[] = ['parcial', 'severo', 'colapsado'];
 const VALID_EST_EDIF: BuildingStatus[] = ['reportado', 'en_rescate', 'despejado'];
 
@@ -39,9 +39,9 @@ interface CsvSpec {
 const CSV_SPECS: Record<CsvKind, CsvSpec> = {
   personas: {
     kind: 'personas', icon: '👤', label: 'Personas',
-    columns: ['nombre', 'cedula', 'estado', 'ubicacion'],
-    sample: 'María Pérez,V-12.345.678,a_salvo,Refugio Plaza Altamira',
-    notes: 'estado: desaparecido · a_salvo · fallecido',
+    columns: ['nombre', 'cedula', 'edad', 'estado', 'ubicacion'],
+    sample: 'María Pérez,V-12.345.678,34,encontrado,Refugio Plaza Altamira',
+    notes: 'estado: desaparecido · encontrado · fallecido · desconocido | edad: opcional (0–120)',
   },
   acopio: {
     kind: 'acopio', icon: '📦', label: 'Centros de acopio',
@@ -249,16 +249,18 @@ const CSV_SPECS: Record<CsvKind, CsvSpec> = {
 
       <!-- Revisión de PERSONAS (OCR + CSV personas): tabla con dedup IA -->
       <ng-template #personasReview>
-        <div class="overflow-hidden rounded-xl ring-1 ring-white/10 shadow-sm mt-4">
+        <div class="overflow-x-auto rounded-xl ring-1 ring-white/10 shadow-sm mt-4">
           <table class="w-full text-left text-[11px]">
             <thead class="bg-white/10 text-white/60 font-semibold">
-              <tr><th class="px-3 py-2.5">Nombre</th><th class="px-3 py-2.5">Cédula</th><th class="px-3 py-2.5">Estado</th><th class="px-3 py-2.5">IA</th></tr>
+              <tr><th class="px-3 py-2.5">Nombre</th><th class="px-3 py-2.5">Cédula</th><th class="px-3 py-2.5">Edad</th><th class="px-3 py-2.5 whitespace-nowrap">Ubicación</th><th class="px-3 py-2.5">Estado</th><th class="px-3 py-2.5">IA</th></tr>
             </thead>
             <tbody class="divide-y divide-white/5 bg-white/5 text-white">
               @for (r of records(); track $index) {
                 <tr class="hover:bg-white/5 transition">
-                  <td class="px-3 py-3 font-semibold text-white">{{ r.nombre }}</td>
+                  <td class="px-3 py-3 font-semibold text-white whitespace-nowrap">{{ r.nombre }}</td>
                   <td class="px-3 py-3 font-medium text-white/60">{{ r.cedula ?? '—' }}</td>
+                  <td class="px-3 py-3 font-medium text-white/60">{{ r.edad ?? '—' }}</td>
+                  <td class="px-3 py-3 font-medium text-white/60 whitespace-nowrap">{{ r.ubicacion || '—' }}</td>
                   <td class="px-3 py-3"><span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="chip(r.estado)">{{ label(r.estado) }}</span></td>
                   <td class="px-3 py-3 font-bold">
                     @if (r.isDuplicate) { <span class="text-warn" title="Duplicado: se unificará">⟳ dup</span> }
@@ -295,11 +297,23 @@ const CSV_SPECS: Record<CsvKind, CsvSpec> = {
 
       <!-- Botonera compartida -->
       <ng-template #footer>
+        @if (saving() && saveProgress().total > 0) {
+          <div class="mt-4 rounded-xl bg-white/10 p-3 ring-1 ring-white/10 shadow-sm">
+            <div class="mb-1.5 flex items-center justify-between text-[11px] font-bold text-white/80">
+              <span>📦 Carga por lotes (de {{ batchSize }} en {{ batchSize }})</span>
+              <span>{{ saveProgress().done }} / {{ saveProgress().total }}</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-white/10 shadow-inner">
+              <div class="h-full rounded-full bg-info transition-[width] duration-200"
+                   [style.width.%]="saveProgress().total ? (saveProgress().done / saveProgress().total) * 100 : 0"></div>
+            </div>
+          </div>
+        }
         <div class="flex gap-3 mt-4">
-          <button (click)="reset()" class="flex-1 rounded-2xl bg-white/10 py-3 text-sm font-bold text-white/80 ring-1 ring-white/10 hover:bg-white/20 transition">Descartar</button>
+          <button (click)="reset()" [disabled]="saving()" class="flex-1 rounded-2xl bg-white/10 py-3 text-sm font-bold text-white/80 ring-1 ring-white/10 hover:bg-white/20 transition disabled:opacity-50">Descartar</button>
           <button (click)="save()" [disabled]="saving()"
                   class="flex-1 rounded-2xl bg-info py-3 text-sm font-bold text-white shadow-md hover:bg-info/90 disabled:opacity-50 transition">
-            {{ saving() ? 'Guardando…' : 'Guardar en base' }}
+            {{ saving() ? (saveProgress().total > batchSize ? 'Cargando por lotes…' : 'Guardando…') : 'Guardar en base' }}
           </button>
         </div>
       </ng-template>
@@ -329,6 +343,9 @@ export class OcrSheetComponent {
   readonly records = signal<OcrRecord[]>([]);              // personas (OCR + CSV)
   readonly genRows = signal<Array<NewCenterRow | NewBuildingRow>>([]); // otros tipos
   readonly saving = signal(false);
+  /** Avance de la carga por lotes (registros guardados / total). */
+  readonly saveProgress = signal<{ done: number; total: number }>({ done: 0, total: 0 });
+  readonly batchSize = OCR_BATCH_SIZE;
   readonly csvError = signal('');
 
   readonly spec = computed(() => CSV_SPECS[this.csvKind()]);
@@ -455,7 +472,7 @@ export class OcrSheetComponent {
 
   private extractRows(
     text: string
-  ): { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string }[] {
+  ): { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string; edad: number | null }[] {
     const ubicacion = 'Refugio Montalbán, Caracas';
     return text
       .split('\n')
@@ -464,8 +481,9 @@ export class OcrSheetComponent {
       .map((m) => ({
         nombre: m[1].trim(),
         cedula: m[2].trim(),
-        estado: 'a_salvo' as PersonStatus,
+        estado: 'encontrado' as PersonStatus,
         ubicacion,
+        edad: null,
       }));
   }
 
@@ -563,16 +581,21 @@ export class OcrSheetComponent {
 
   private toPersona(
     o: Record<string, string>
-  ): { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string } | null {
+  ): { nombre: string; cedula: string | null; estado: PersonStatus; ubicacion: string; edad: number | null } | null {
     const nombre = (o['nombre'] ?? '').trim();
     if (!nombre) return null;
     const cedula = (o['cedula'] ?? '').trim();
     const estadoRaw = (o['estado'] ?? '').trim().toLowerCase();
     const estado = (VALID_ESTADOS as string[]).includes(estadoRaw)
       ? (estadoRaw as PersonStatus)
-      : 'a_salvo';
+      : 'desconocido';
     const ubicacion = (o['ubicacion'] ?? '').trim() || 'Carga CSV';
-    return { nombre, cedula: cedula || null, estado, ubicacion };
+    const edadRaw = (o['edad'] ?? '').trim();
+    const edadNum = Number(edadRaw);
+    const edad = edadRaw !== '' && Number.isFinite(edadNum) && edadNum >= 0 && edadNum <= 120
+      ? Math.floor(edadNum)
+      : null;
+    return { nombre, cedula: cedula || null, estado, ubicacion, edad };
   }
 
   private toCenters(
@@ -653,9 +676,12 @@ export class OcrSheetComponent {
   async save(): Promise<void> {
     if (this.saving()) return;
     this.saving.set(true);
+    this.saveProgress.set({ done: 0, total: 0 });
     try {
       if (this.csvKind() === 'personas' || this.tab() === 'imagen') {
-        const summary = await this.data.saveOcrRecords(this.records());
+        const summary = await this.data.saveOcrRecords(this.records(), (done, total) =>
+          this.saveProgress.set({ done, total }),
+        );
         this.ui.toast(`Lista procesada: ${summary.added} nuevos, ${summary.merged} unificados por IA.`, 'success', 6000);
       } else if (this.csvKind() === 'edificio') {
         const res = await this.data.saveBuildingsBatch(this.genRows() as NewBuildingRow[]);
@@ -680,6 +706,7 @@ export class OcrSheetComponent {
     this.scanText.set('');
     this.records.set([]);
     this.genRows.set([]);
+    this.saveProgress.set({ done: 0, total: 0 });
   }
 
   chip = (s: any) => STATUS_CHIP[s as keyof typeof STATUS_CHIP];

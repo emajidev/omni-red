@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BottomSheetComponent } from '../../shared/bottom-sheet/bottom-sheet.component';
 import { CountUpDirective } from '../../shared/count-up.directive';
 import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
-import { PersonStatus } from '../../core/models/models';
+import { ExternalPerson, PersonStatus } from '../../core/models/models';
 import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/util/labels';
 
 /**
@@ -78,7 +78,7 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
                     class="flex w-full items-start gap-3 rounded-xl bg-white p-4 text-left shadow-sm
                            ring-1 ring-borderlight hover:bg-appbg active:scale-[.99] transition fade-in">
               <span class="mt-1 h-3 w-3 shrink-0 rounded-full shadow-sm"
-                    [style.background]="p.estado === 'a_salvo' ? '#38A169' : p.estado === 'desaparecido' ? '#E53E3E' : '#718096'"></span>
+                    [style.background]="p.estado === 'encontrado' ? '#38A169' : p.estado === 'desaparecido' ? '#E53E3E' : '#718096'"></span>
               @if (p.foto_url) {
                 <div class="h-12 w-12 shrink-0 rounded-lg overflow-hidden ring-1 ring-black/5 shadow-sm">
                   <img [src]="p.foto_url" class="h-full w-full object-cover" />
@@ -89,7 +89,7 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
                   <span class="truncate text-sm font-bold text-textmain">{{ p.nombre }}</span>
                   <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="chip(p.estado)">{{ label(p.estado) }}</span>
                 </span>
-                <span class="mt-1 block truncate text-[13px] text-textmuted">{{ p.cedula ?? 'Sin cédula' }} · {{ p.ubicacion }}</span>
+                <span class="mt-1 block truncate text-[13px] text-textmuted">{{ p.cedula ?? 'Sin cédula' }}{{ p.edad ? ' · ' + p.edad + ' años' : '' }} · {{ p.ubicacion }}</span>
                 @if (p.telefono_contacto) {
                   <span class="mt-1 block text-[12px] font-semibold text-info">📞 {{ p.telefono_contacto }}</span>
                 }
@@ -100,10 +100,50 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
           </li>
         } @empty {
           <li class="rounded-xl bg-appbg p-8 text-center text-sm font-medium text-textmuted ring-1 ring-borderlight shadow-inner">
-            Sin coincidencias para "{{ ui.query() }}".
+            @if (externalResults().length) {
+              Sin coincidencias en la base local. Mira el registro médico externo 👇
+            } @else {
+              Sin coincidencias para "{{ ui.query() }}".
+            }
           </li>
         }
       </ul>
+
+      <!-- Fallback: registro médico externo (fvivemas) -->
+      @if (externalResults().length) {
+        <div class="mt-5 border-t border-black/5 pt-4">
+          <div class="mb-2 flex items-center gap-2 px-1">
+            <span class="rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold text-info ring-1 ring-info/30">Fuente externa</span>
+            <span class="text-[11px] font-semibold text-textmuted">Asistencia Médica · fvivemas ({{ externalResults().length }})</span>
+          </div>
+          <ul class="space-y-3">
+            @for (p of externalResults(); track p.id) {
+              <li>
+                <button (click)="focusExternal(p)"
+                        class="flex w-full items-start gap-3 rounded-xl bg-white p-4 text-left shadow-sm
+                               ring-1 ring-borderlight hover:bg-appbg active:scale-[.99] transition fade-in">
+                  <span class="mt-1 h-3 w-3 shrink-0 rounded-full bg-info shadow-sm"></span>
+                  <span class="min-w-0 flex-1">
+                    <span class="flex items-center gap-2">
+                      <span class="truncate text-sm font-bold text-textmain">{{ p.nombre }}</span>
+                      <span class="shrink-0 rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold text-info ring-1 ring-info/30">fvivemas</span>
+                    </span>
+                    <span class="mt-1 block truncate text-[13px] text-textmuted">{{ p.cedula ?? 'Sin cédula' }}{{ p.edad ? ' · ' + p.edad + ' años' : '' }} · {{ p.ubicacion }}</span>
+                    @if (p.telefono_contacto) {
+                      <span class="mt-1 block text-[12px] font-semibold text-info">📞 {{ p.telefono_contacto }}</span>
+                    }
+                    @if (p.detalle) {
+                      <span class="mt-1 block truncate text-[12px] text-textmuted">🩺 {{ p.detalle }}</span>
+                    }
+                    <span class="mt-1 block text-[11px] font-semibold text-textmuted">Registro médico externo · {{ ago(p.created_at) }}</span>
+                  </span>
+                  @if (p.lat != null) { <span class="mt-2 font-bold text-textmuted">›</span> }
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     </app-bottom-sheet>
   `
 })
@@ -113,14 +153,26 @@ export class SearchSheetComponent {
 
   readonly m = this.data.metrics;
 
+  constructor() {
+    // Fallback externo (fvivemas): la búsqueda se resuelve en el backend. Al
+    // cambiar el término, lo consultamos con debounce de 300 ms; el resultado
+    // se publica en data.external() y lo lee externalResults().
+    effect((onCleanup) => {
+      const q = this.ui.query();
+      const t = setTimeout(() => void this.data.searchExternal(q), 300);
+      onCleanup(() => clearTimeout(t));
+    });
+  }
+
   readonly estadoFilter = signal<'todos' | PersonStatus>('todos');
   readonly centroFilter = signal<string>(''); // centro_id o '' (todos)
 
   readonly estadoChips = [
     { val: 'todos', label: 'Todos', bg: '#64748b' },
     { val: 'desaparecido', label: 'Desaparecidos', bg: 'var(--c-alert)' },
-    { val: 'a_salvo', label: 'A salvo', bg: 'var(--c-safe)' },
+    { val: 'encontrado', label: 'Encontrados', bg: 'var(--c-safe)' },
     { val: 'fallecido', label: 'Fallecidos', bg: '#94a3b8' },
+    { val: 'desconocido', label: 'Desconocidos', bg: '#94a3b8' },
   ] as const;
 
   readonly results = computed(() => {
@@ -138,8 +190,22 @@ export class SearchSheetComponent {
       );
   });
 
+  /**
+   * Fallback externo (fvivemas): el backend ya devolvió las coincidencias del
+   * término actual (ver el effect del constructor), así que aquí solo las
+   * exponemos a la plantilla.
+   */
+  readonly externalResults = computed<ExternalPerson[]>(() => this.data.external());
+
   focus(p: { id: string; lat: number; lng: number }): void {
     this.ui.focusOn({ lat: p.lat, lng: p.lng, id: p.id, zoom: 15 });
+  }
+
+  /** Centra el mapa en el hospital del registro externo (no hay marcador). */
+  focusExternal(p: ExternalPerson): void {
+    if (p.lat != null && p.lng != null) {
+      this.ui.focusOn({ lat: p.lat, lng: p.lng, id: p.id, zoom: 15 });
+    }
   }
 
   chip = (s: any) => STATUS_CHIP[s as keyof typeof STATUS_CHIP];

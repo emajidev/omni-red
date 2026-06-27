@@ -131,7 +131,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         for (const m of markers) {
           if (m.options.omniType === 'center') isCenter = true;
           if (m.options.omniStatus === 'desaparecido') missing++;
-          else if (m.options.omniStatus === 'a_salvo') safe++;
+          else if (m.options.omniStatus === 'encontrado') safe++;
         }
         
         let cls = 'bg-white/90 text-gray-800 border-black/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)]';
@@ -322,7 +322,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       const isMissing = p.estado === 'desaparecido';
       const cls = isMissing
         ? 'omni-pin omni-pin--alert omni-pin--pulse'
-        : p.estado === 'a_salvo' ? 'omni-pin omni-pin--safe' : 'omni-pin';
+        : p.estado === 'encontrado' ? 'omni-pin omni-pin--safe' : 'omni-pin';
       const marker = L.marker([p.lat, p.lng], {
         omniStatus: p.estado,
         icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] })
@@ -349,7 +349,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
 
   // --- Popups (themed via .omni-pop classes; content escaped vs. XSS) -------
   private personPopup(p: PersonReport): string {
-    const dot = p.estado === 'a_salvo' ? 'var(--c-safe)' : p.estado === 'desaparecido' ? 'var(--c-alert)' : '#94a3b8';
+    const dot = p.estado === 'encontrado' ? 'var(--c-safe)' : p.estado === 'desaparecido' ? 'var(--c-alert)' : '#94a3b8';
     const imgHtml = p.foto_url ? `<img src="${this.esc(p.foto_url)}" alt="" />` : '';
     return `
       <div class="omni-pop">

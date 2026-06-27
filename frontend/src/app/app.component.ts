@@ -10,6 +10,8 @@ import { OcrSheetComponent } from './features/ocr/ocr-sheet.component';
 import { CentersSheetComponent } from './features/centers/centers-sheet.component';
 import { SismosSheetComponent } from './features/sismos/sismos-sheet.component';
 import { FacilitiesSheetComponent } from './features/facilities/facilities-sheet.component';
+import { BuildingsSheetComponent } from './features/buildings/buildings-sheet.component';
+import { ReportBuildingSheetComponent } from './features/report-building/report-building-sheet.component';
 import { CountUpDirective } from './shared/count-up.directive';
 import { BottomSheetComponent } from './shared/bottom-sheet/bottom-sheet.component';
 
@@ -28,7 +30,8 @@ declare var gsap: any;
   imports: [
     FormsModule, CountUpDirective, CrisisMapComponent,
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent,
-    SismosSheetComponent, FacilitiesSheetComponent, BottomSheetComponent
+    SismosSheetComponent, FacilitiesSheetComponent, BuildingsSheetComponent,
+    ReportBuildingSheetComponent, BottomSheetComponent
   ],
   template: `
     <!-- 3 Second Splash Screen -->
@@ -235,7 +238,7 @@ declare var gsap: any;
 
       <!-- ===== Themed Glass Bottom Navigation ===== -->
       <nav class="absolute inset-x-0 bottom-0 z-[600] flex justify-center px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pointer-events-none gs-nav">
-        <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] items-center justify-evenly sm:justify-start gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
+        <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] sm:max-w-[760px] items-center justify-evenly sm:justify-center gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
 
           <!-- Item 1: Buscar -->
           <button (click)="ui.open('search')" class="nav-btn" [class.is-active]="ui.sheet() === 'search'">
@@ -278,6 +281,10 @@ declare var gsap: any;
             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
             <span class="lbl">Hospitales</span>
           </button>
+          <button (click)="ui.open('edificios')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'edificios'" style="color: var(--c-warn)">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
+            <span class="lbl">Edificios</span>
+          </button>
           <button (click)="ui.open('sismos')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'sismos'">
             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" /></svg>
             <span class="lbl">Sismos</span>
@@ -303,6 +310,8 @@ declare var gsap: any;
         @case ('sismos')  { <app-sismos-sheet /> }
         @case ('refugios')   { <app-facilities-sheet tipo="refugio" /> }
         @case ('hospitales') { <app-facilities-sheet tipo="hospital" /> }
+        @case ('edificios')  { <app-buildings-sheet /> }
+        @case ('report-building') { <app-report-building-sheet /> }
         @case ('menu') {
           <app-bottom-sheet (close)="ui.close()">
             <div class="px-5 py-6">
@@ -324,9 +333,17 @@ declare var gsap: any;
                   <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
                   <span class="text-sm font-medium">Hospitales</span>
                 </button>
-                <button (click)="ui.open('sismos')" class="flex flex-col items-center justify-center p-4 rounded-2xl border col-span-2" style="border-color: var(--divider); background: var(--surface)">
+                <button (click)="ui.open('edificios')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
+                  <span class="text-sm font-medium">Edificios</span>
+                </button>
+                <button (click)="ui.open('sismos')" class="flex flex-col items-center justify-center p-4 rounded-2xl border" style="border-color: var(--divider); background: var(--surface)">
                   <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" /></svg>
                   <span class="text-sm font-medium">Sismos Recientes</span>
+                </button>
+                <button (click)="ui.open('report-building')" class="col-span-2 flex flex-col items-center justify-center p-4 rounded-2xl text-white" style="background: linear-gradient(135deg, #f59e0b, #f97316)">
+                  <svg class="h-6 w-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
+                  <span class="text-sm font-bold">Reportar edificio afectado</span>
                 </button>
               </div>
             </div>

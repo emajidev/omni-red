@@ -31,7 +31,22 @@ npm run start:dev         # http://localhost:3000/api
 | GET | `/api/centros` | centros de acopio | tabla `centros_acopio` |
 | PATCH | `/api/centros/:id` | actualiza capacidad/insumos | RPC `actualizar_acopio` |
 | GET | `/api/sismos` | feed de sismos | tabla `sismos` |
+| GET | `/api/edificios` | edificios dañados/colapsados | tabla `edificios_caidos` |
+| POST | `/api/edificios` | reporta un edificio afectado | `edificios_caidos` |
+| POST | `/api/edificios/batch` | alta masiva desde CSV | `edificios_caidos` |
+| POST | `/api/edificios/sync` | ingesta del mapa público de terremotovenezuela.com | `edificios_caidos` |
 | GET | `/api/metricas` | métricas del dashboard | RPC `obtener_metricas` |
+
+> **Edificios — fuente externa.** El mapa público de
+> [terremotovenezuela.com](https://terremotovenezuela.com) es una SPA que lee
+> directo de su Supabase vía PostgREST (`GET /rest/v1/buildings`, clave
+> *publishable* de solo lectura). `EdificiosSyncService` replica esa lectura
+> **server-side** y la vuelca (upsert idempotente por `fuente`+`fuente_id`) en
+> `edificios_caidos`, mapeando `damage_level` (`total`→`colapsado`) y
+> derivando `personas_atrapadas` de `trapped_names`. Corre al arrancar y cada
+> `EDIFICIOS_SYNC_INTERVAL_MS` (def. 5 min); se desactiva con
+> `EDIFICIOS_SYNC_DISABLED=true`. Config: `TERREMOTO_SUPABASE_URL`,
+> `TERREMOTO_SUPABASE_KEY`, `TERREMOTO_BUILDINGS_TABLE`.
 
 ### Ejemplos
 
@@ -63,7 +78,8 @@ src/
 ├── database/                # pool de conexiones pg (global)
 ├── personas/                # GET/POST personas
 ├── centros/                 # GET/PATCH centros de acopio
-├── sismos/                  # GET sismos
+├── sismos/                  # GET sismos + auto-sync USGS
+├── edificios/               # GET/POST edificios + sync terremotovenezuela.com
 └── metricas/                # GET métricas
 ```
 

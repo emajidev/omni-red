@@ -162,6 +162,13 @@ export class ApiService {
     );
   }
 
+  /** Reporta (crea) un edificio afectado. */
+  createEdificio(payload: NewBuildingRow): Promise<CollapsedBuilding> {
+    return firstValueFrom(
+      this.http.post<CollapsedBuilding>(`${this.base}/edificios`, payload),
+    );
+  }
+
   /** Alta masiva de edificios caídos desde CSV. */
   createEdificiosBatch(registros: NewBuildingRow[]): Promise<BatchUploadResult> {
     return firstValueFrom(

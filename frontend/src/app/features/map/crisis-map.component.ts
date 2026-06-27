@@ -6,8 +6,11 @@ import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { HIGHLIGHT_ZONES } from '../../core/data/map-zones';
 import { VENEZUELA_OUTLINE } from '../../core/data/ve-outline';
-import { PersonReport, Quake, ReliefCenter } from '../../core/models/models';
-import { CRISIS_SINCE, SOURCE_LABEL, STATUS_LABEL } from '../../core/util/labels';
+import { CollapsedBuilding, PersonReport, Quake, ReliefCenter } from '../../core/models/models';
+import {
+  BUILDING_STATUS_LABEL, CRISIS_SINCE, DAMAGE_LABEL, SOURCE_LABEL, STATUS_LABEL,
+  buildingStatusColor, damageColor
+} from '../../core/util/labels';
 
 // Leaflet is loaded from CDN (see index.html) and exposed as global `L`.
 declare const L: any;
@@ -40,6 +43,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private peopleLayer: any;
   private centersLayer: any;
   private quakesLayer: any;
+  private buildingsLayer: any;
   private tileLayer: any;
   private outlineLayer: any;
   private markersById = new Map<string, any>();
@@ -69,7 +73,8 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       const people = this.data.people();
       const centers = this.data.centers();
       const quakes = this.data.quakes();
-      if (this.map) this.renderMarkers(people, centers, quakes);
+      const buildings = this.data.edificios();
+      if (this.map) this.renderMarkers(people, centers, quakes, buildings);
     });
 
     // Swap the basemap when the theme toggles.
@@ -102,7 +107,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       // El zoom inicial es el mínimo: no se puede alejar (sin huecos vacíos),
       // solo acercar. El paneo se acota a la región (Venezuela + Caribe).
       minZoom: CrisisMapComponent.INITIAL_ZOOM,
-      maxZoom: 19,
+      maxZoom: 30,
       maxBounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
       maxBoundsViscosity: 1.0,
     });
@@ -156,6 +161,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     const LAny = L as any;
     this.peopleLayer = LAny.markerClusterGroup ? LAny.markerClusterGroup(clusterOptions).addTo(this.map) : L.layerGroup().addTo(this.map);
     this.centersLayer = L.layerGroup().addTo(this.map);
+    this.buildingsLayer = L.layerGroup().addTo(this.map);
 
     // this.drawHighlightZones();
     this.frameVenezuela();
@@ -165,7 +171,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     this.map.on('zoomend', () => this.syncDragByZoom());
     this.syncDragByZoom();
 
-    this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes());
+    this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes(), this.data.edificios());
 
     // Force Leaflet to recalculate map container size after DOM insertion
     setTimeout(() => {
@@ -268,10 +274,14 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   // --- Markers --------------------------------------------------------------
-  private renderMarkers(people: PersonReport[], centers: ReliefCenter[], quakes: Quake[] = []): void {
+  private renderMarkers(
+    people: PersonReport[], centers: ReliefCenter[], quakes: Quake[] = [],
+    buildings: CollapsedBuilding[] = []
+  ): void {
     this.peopleLayer.clearLayers();
     this.centersLayer.clearLayers();
     this.quakesLayer.clearLayers();
+    this.buildingsLayer.clearLayers();
     this.markersById.clear();
 
     // Epicentros de sismos (datos del endpoint /sismos).
@@ -345,6 +355,24 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       marker.addTo(this.centersLayer);
       this.markersById.set(c.id, marker);
     }
+
+    // Edificios afectados (estructuras dañadas / colapsadas). Halo por nivel de
+    // daño; latido cuando hay personas atrapadas y el rescate sigue en curso.
+    for (const b of buildings) {
+      const trapped = b.personas_atrapadas > 0 && b.estado !== 'despejado';
+      const cls = `omni-building omni-building--${b.nivel_dano}${trapped ? ' omni-building--trapped' : ''}`;
+      const marker = L.marker([b.lat, b.lng], {
+        omniType: 'building',
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="${cls}">🏚️</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        })
+      }).bindPopup(this.buildingPopup(b), { maxWidth: 280 });
+      marker.addTo(this.buildingsLayer);
+      this.markersById.set(b.id, marker);
+    }
   }
 
   // --- Popups (themed via .omni-pop classes; content escaped vs. XSS) -------
@@ -388,6 +416,25 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
           : `<div class="row">Insumos: <b>${supplies}</b></div>`}
         ${c.responsable ? `<div class="row">Responsable: <b>${this.esc(c.responsable)}</b></div>` : ''}
         ${c.contacto ? `<div class="row">📞 Contacto: <b>${this.esc(c.contacto)}</b></div>` : ''}
+      </div>`;
+  }
+
+  private buildingPopup(b: CollapsedBuilding): string {
+    const dColor = damageColor(b.nivel_dano);
+    const sColor = buildingStatusColor(b.estado);
+    const trapped = b.personas_atrapadas > 0 && b.estado !== 'despejado';
+    return `
+      <div class="omni-pop">
+        <div class="head">
+          <span class="sdot" style="background:${dColor}"></span>
+          <strong>${this.esc(b.nombre)}</strong>
+        </div>
+        <div class="kind" style="color:${dColor}">${DAMAGE_LABEL[b.nivel_dano]}</div>
+        <div class="row">Ubicación: <b>${this.esc(b.ubicacion)}</b></div>
+        <div class="row">Estado: <b style="color:${sColor}">${BUILDING_STATUS_LABEL[b.estado]}</b></div>
+        <div class="row">Personas atrapadas: <b>${b.personas_atrapadas}</b></div>
+        ${b.contacto ? `<div class="row">📞 Contacto: <b>${this.esc(b.contacto)}</b></div>` : ''}
+        ${trapped ? `<div class="flag">⚑ Rescate en curso · ${b.personas_atrapadas} atrapada(s)</div>` : ''}
       </div>`;
   }
 

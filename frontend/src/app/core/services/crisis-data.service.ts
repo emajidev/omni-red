@@ -226,6 +226,13 @@ export class CrisisDataService {
     return res;
   }
 
+  /** Reporta un edificio afectado (alta individual). Recarga el estado tras crear. */
+  async reportBuilding(input: NewBuildingRow): Promise<CollapsedBuilding> {
+    const building = await this.api.createEdificio(input);
+    await this.loadAll();
+    return building;
+  }
+
   /** Asigna (o limpia con null) el sitio (hospital/refugio) de una persona. */
   async assignPersonCenter(personId: string, centerId: string | null): Promise<void> {
     await this.api.assignCentro(personId, centerId);

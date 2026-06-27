@@ -1,5 +1,5 @@
 /** Shared labels, colors and formatters for the UI (UI text stays in Spanish). */
-import { CenterCapacity, PersonStatus, ReportSource } from '../models/models';
+import { BuildingStatus, CenterCapacity, DamageLevel, PersonStatus, ReportSource } from '../models/models';
 
 /**
  * Inicio de la crisis sísmica actual. El MAPA solo dibuja sismos desde esta
@@ -57,4 +57,34 @@ export function timeAgo(iso: string): string {
 /** Pin color for a person status on the map. */
 export function statusColor(s: PersonStatus): string {
   return s === 'encontrado' ? '#22c55e' : s === 'desaparecido' ? '#ef4444' : '#94a3b8';
+}
+
+// --- Edificios afectados (estructuras dañadas / colapsadas) ----------------
+export const DAMAGE_LABEL: Record<DamageLevel, string> = {
+  parcial: 'Daño parcial',
+  severo: 'Daño severo',
+  colapsado: 'Colapsado'
+};
+
+export const BUILDING_STATUS_LABEL: Record<BuildingStatus, string> = {
+  reportado: 'Reportado',
+  en_rescate: 'En rescate',
+  despejado: 'Despejado'
+};
+
+/** Orden de gravedad para listar/ordenar edificios (colapsado primero). */
+export const DAMAGE_RANK: Record<DamageLevel, number> = {
+  colapsado: 0,
+  severo: 1,
+  parcial: 2
+};
+
+/** Color del marcador/etiqueta según el nivel de daño. */
+export function damageColor(d: DamageLevel): string {
+  return d === 'colapsado' ? '#ef4444' : d === 'severo' ? '#f97316' : '#f59e0b';
+}
+
+/** Color del estado de rescate del edificio. */
+export function buildingStatusColor(s: BuildingStatus): string {
+  return s === 'despejado' ? '#22c55e' : s === 'en_rescate' ? '#f59e0b' : '#3b82f6';
 }

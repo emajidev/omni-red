@@ -38,6 +38,48 @@ function dice(a: Set<string>, b: Set<string>): number {
   return (2 * inter) / (a.size + b.size);
 }
 
+/** Distancia de edición (Levenshtein) entre dos cadenas cortas. */
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/** Similitud por edición (0..1) — buena para typos en palabras CORTAS. */
+function editSim(a: string, b: string): number {
+  if (!a || !b) return 0;
+  const max = Math.max(a.length, b.length);
+  return max ? 1 - levenshtein(a, b) / max : 0;
+}
+
+/**
+ * Mejor similitud por edición entre cada token de la consulta (≥3 chars) y cada
+ * token del texto. Captura "joze"→"jose" o "gonzalez"→"gonzales" que los
+ * trigramas, en palabras cortas, no alcanzan.
+ */
+function bestTokenEditSim(nq: string, ntext: string): number {
+  const qToks = nq.split(' ').filter((t) => t.length >= 3);
+  const tToks = ntext.split(' ').filter(Boolean);
+  let best = 0;
+  for (const q of qToks) {
+    for (const t of tToks) {
+      const s = editSim(q, t);
+      if (s > best) best = s;
+    }
+  }
+  return best;
+}
+
 /**
  * Similitud (0..1) de la consulta contra UN texto, ya normalizados ambos.
  * Premia coincidencias exactas / por prefijo / por substring y, si no, cae a la
@@ -51,7 +93,9 @@ function scoreText(nq: string, ntext: string): number {
   // Todos los tokens de la consulta aparecen (orden libre): "perez jose".
   const toks = nq.split(' ').filter((t) => t.length >= 2);
   if (toks.length > 1 && toks.every((t) => ntext.includes(t))) return 0.82;
-  return dice(trigrams(nq), trigrams(ntext));
+  // Difuso: lo mejor entre trigramas (palabras largas) y edición por token
+  // (typos en palabras cortas).
+  return Math.max(dice(trigrams(nq), trigrams(ntext)), bestTokenEditSim(nq, ntext));
 }
 
 /** Campo a evaluar con su peso relativo. */

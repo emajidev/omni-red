@@ -65,6 +65,8 @@ declare var gsap: any;
           <div class="space-y-3 text-[13px] leading-relaxed">
             <p><b>SomosUnoVzla</b> es una plataforma de respuesta ciudadana ante la actual crisis del terremoto en Venezuela. Su objetivo es centralizar y automatizar la búsqueda de personas para que localizar a alguien sea mucho más rápido y sencillo.</p>
             <p>Es una iniciativa desarrollada por <b>estudiantes de Ingeniería en Inteligencia Artificial</b>. Para construirla aplicamos técnicas de <b>web scraping</b>, recopilación y consolidación de información, <b>redes neuronales convolucionales (CNN)</b> y algoritmos de <b>vecinos más cercanos (k-NN)</b> para relacionar datos y encontrar coincidencias.</p>
+            <p>Los datos pasan por procesos de <b>ETL</b> (extracción, transformación y carga): <b>extraemos</b> de fuentes públicas, APIs y archivos (CSV y OCR de listas); <b>transformamos</b> con normalización de texto (minúsculas y sin acentos), consolidación y <b>desduplicación</b> por huella (cédula/nombre); y <b>cargamos</b> en la base por lotes.</p>
+            <p>El buscador combina varios <b>algoritmos de búsqueda</b>: coincidencia exacta, por prefijo y por subcadena con <b>puntuación ponderada</b>; <b>búsqueda difusa por trigramas</b> (similitud por coeficiente de Sørensen-Dice); y <b>distancia de edición de Levenshtein</b>, para tolerar acentos y errores de tipeo.</p>
             <p style="color: var(--txt-muted);">Toda la información mostrada es de <b>dominio público</b> y ha sido recopilada de diversas fuentes abiertas.</p>
           </div>
 
@@ -371,14 +373,12 @@ export class AppComponent implements OnInit, AfterViewInit {
   showSplash = signal(true);
   fadeSplash = signal(false);
 
-  /** Modal de bienvenida/aviso: se muestra al cargar hasta que el usuario acepta. */
+  /** Modal de bienvenida/aviso: se muestra SIEMPRE al cargar, hasta que el usuario acepta. */
   showIntro = signal(false);
-  private readonly INTRO_KEY = 'somosuno_intro_accepted_v1';
 
-  /** Cierra el modal y recuerda la aceptación para no volver a mostrarlo. */
+  /** Cierra el modal (se vuelve a mostrar en la próxima recarga). */
   acceptIntro(): void {
     this.showIntro.set(false);
-    try { localStorage.setItem(this.INTRO_KEY, '1'); } catch { /* almacenamiento no disponible */ }
   }
 
   /**
@@ -442,10 +442,8 @@ export class AppComponent implements OnInit, AfterViewInit {
       setTimeout(() => {
         this.showSplash.set(false); // Remove from DOM after transition
 
-        // Tras el splash, mostrar el modal de bienvenida una sola vez.
-        let accepted = false;
-        try { accepted = localStorage.getItem(this.INTRO_KEY) === '1'; } catch { /* ignore */ }
-        if (!accepted) this.showIntro.set(true);
+        // Tras el splash, mostrar SIEMPRE el modal de bienvenida (en cada recarga).
+        this.showIntro.set(true);
       }, 1000); // 1s transition duration
     }, 2000); // Wait 2s before fading
   }

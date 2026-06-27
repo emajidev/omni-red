@@ -140,7 +140,11 @@
       "Bash(curl -s --http2 -H 'authority: desaparecidos-terremoto-api.theempire.tech' -H 'accept: application/json, text/plain, */*' -H 'accept-language: es-ES,es;q=0.9,en;q=0.8' -H 'origin: https://www.desaparecidosterremotovenezuela.com' -H 'referer: https://www.desaparecidosterremotovenezuela.com/' -H 'sec-ch-ua: \"Chromium\";v=\"124\", \"Google Chrome\";v=\"124\", \"Not-A.Brand\";v=\"99\"' -H 'sec-ch-ua-mobile: ?0' -H 'sec-ch-ua-platform: \"Windows\"' -H 'sec-fetch-dest: empty' -H 'sec-fetch-mode: cors' -H 'sec-fetch-site: cross-site' -H 'user-agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/124.0.0.0 Safari/537.36' 'https://desaparecidos-terremoto-api.theempire.tech/api/personas?page=1&size=1' -o r2.json -w 'HTTP %{http_code} bytes=%{size_download}\\\\n')",
       "WebFetch(domain:desaparecidos-terremoto-api.theempire.tech)",
       "Bash(curl -s -D - -o /dev/null -A \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) Chrome/124.0 Safari/537.36\" \"https://desaparecidos-terremoto-api.theempire.tech/api/personas?page=1&size=1\")",
-      "Read(///wsl.localhost/tmp//**)"
+      "Read(///wsl.localhost/tmp//**)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\Ubuntu\\\\home\\\\ema\\\\personal-repos\\\\omni-red\" 2>/dev/null; ls -la; echo \"---STRUCTURE---\"; find . -maxdepth 2 -type d -not -path '*/node_modules/*' -not -path '*/.git/*' | head -60)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\Ubuntu\\\\home\\\\ema\\\\personal-repos\\\\omni-red\" 2>/dev/null; echo \"=== backend ===\"; find backend -type f -not -path '*/node_modules/*' | head -80; echo \"=== dataset ===\"; find dataset -type f | head -40)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\Ubuntu\\\\home\\\\ema\\\\personal-repos\\\\omni-red\" 2>/dev/null; echo \"=== api src ===\"; find backend/api/src -type f 2>/dev/null; echo \"=== frontend search/services ===\"; find frontend/src -type f \\\\\\( -name '*.ts' \\\\\\) | grep -iE 'search|person|service|ocr|etl|carga' | head -40)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\Ubuntu\\\\home\\\\ema\\\\personal-repos\\\\omni-red\" 2>/dev/null; echo \"=== pg_trgm / unaccent / functions ===\"; grep -niE 'pg_trgm|unaccent|similarity|trigram|hash_dedup|normalizar_texto|levenshtein' backend/supabase/*.sql | head -40)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -35,7 +35,7 @@ declare var gsap: any;
     @if (showSplash()) {
       <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity duration-1000"
            style="background: var(--bg); color: var(--txt);" [class.opacity-0]="fadeSplash()">
-        <h1 class="text-[2.5rem] font-extrabold tracking-tight mb-6">SomosUno</h1>
+        <h1 class="text-[2.5rem] font-extrabold tracking-tight mb-6">SomosUnoVzla</h1>
 
         <!-- Loading Progress Bar -->
         <div class="w-48 h-1.5 rounded-full overflow-hidden" style="background: var(--chip-bg);">
@@ -54,7 +54,7 @@ declare var gsap: any;
 
           <!-- Marca -->
           <div class="mb-4 flex items-center gap-2">
-            <span id="intro-title" class="text-xl font-black tracking-tight">SomosUno</span>
+            <span id="intro-title" class="text-xl font-black tracking-tight">SomosUnoVzla</span>
             <svg class="h-[18px] w-[27px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
               <rect width="90" height="20" fill="#FCE300"/>
               <rect y="20" width="90" height="20" fill="#0038A8"/>
@@ -63,7 +63,7 @@ declare var gsap: any;
           </div>
 
           <div class="space-y-3 text-[13px] leading-relaxed">
-            <p><b>SomosUno</b> es una plataforma de respuesta ciudadana ante la actual crisis del terremoto en Venezuela. Su objetivo es centralizar y automatizar la búsqueda de personas para que localizar a alguien sea mucho más rápido y sencillo.</p>
+            <p><b>SomosUnoVzla</b> es una plataforma de respuesta ciudadana ante la actual crisis del terremoto en Venezuela. Su objetivo es centralizar y automatizar la búsqueda de personas para que localizar a alguien sea mucho más rápido y sencillo.</p>
             <p>Es una iniciativa desarrollada por <b>estudiantes de Ingeniería en Inteligencia Artificial</b>. Para construirla aplicamos técnicas de <b>web scraping</b>, recopilación y consolidación de información, <b>redes neuronales convolucionales (CNN)</b> y algoritmos de <b>vecinos más cercanos (k-NN)</b> para relacionar datos y encontrar coincidencias.</p>
             <p style="color: var(--txt-muted);">Toda la información mostrada es de <b>dominio público</b> y ha sido recopilada de diversas fuentes abiertas.</p>
           </div>
@@ -72,7 +72,7 @@ declare var gsap: any;
           <div class="mt-4 rounded-xl p-3 text-[12px] leading-relaxed"
                style="background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.30);">
             <b style="color: var(--c-alert);">Aviso de responsabilidad.</b>
-            SomosUno es una herramienta informativa de apoyo. No nos hacemos responsables de la exactitud, vigencia o uso que se dé a la información aquí presentada, ni de las decisiones tomadas con base en ella. Ante una emergencia, contacta siempre a los organismos oficiales de protección civil y rescate.
+            SomosUnoVzla es una herramienta informativa de apoyo. No nos hacemos responsables de la exactitud, vigencia o uso que se dé a la información aquí presentada, ni de las decisiones tomadas con base en ella. Ante una emergencia, contacta siempre a los organismos oficiales de protección civil y rescate.
           </div>
 
           <button (click)="acceptIntro()"
@@ -110,7 +110,7 @@ declare var gsap: any;
         <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
           <!-- Centered Brand -->
           <div class="flex items-center gap-2">
-            <span class="text-2xl font-black tracking-tight">SomosUno</span>
+            <span class="text-2xl font-black tracking-tight">SomosUnoVzla</span>
             <svg class="h-[22px] w-[32px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
               <rect width="90" height="20" fill="#FCE300"/>
               <rect y="20" width="90" height="20" fill="#0038A8"/>

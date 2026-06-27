@@ -11,6 +11,13 @@ export type PersonStatus = 'desaparecido' | 'encontrado' | 'fallecido' | 'descon
 export type ReportSource =
   | 'twitter' | 'telegram' | 'web' | 'ocr_lista' | 'llamada' | 'whatsapp';
 
+/**
+ * URL del API/fuente que se consultó para obtener el registro (uniforme en
+ * todos los endpoints de personas): el propio endpoint de OmniRed para la BD
+ * propia, o la URL de la fuente externa (fvivemas / ayuda-api).
+ */
+export type FuenteApiUrl = string;
+
 export type CenterCapacity = 'abierto' | 'al_limite' | 'cerrado';
 
 /** Tipo de sitio en `centros_acopio`. */
@@ -30,7 +37,8 @@ export interface PersonReport {
   ubicacion: string;
   lat: number;
   lng: number;
-  fuente: ReportSource;
+  fuente: ReportSource;              // canal del reporte (web/twitter/ocr…)
+  fuente_api?: FuenteApiUrl;         // URL del API consultado (este backend)
   detalle?: string | null;
   reportado_por?: string | null;
   lista_origen_id?: string | null;
@@ -86,7 +94,8 @@ export interface ExternalPerson {
   lng: number | null;       // coordinates.lng
   telefono_contacto?: string | null; // contact.reporterPhone[0]
   detalle?: string | null;  // diagnosis · healthStatus / estado · texto
-  fuente: 'fvivemas' | 'ayuda';
+  fuente: 'fvivemas' | 'ayuda';      // nombre corto de la fuente
+  fuente_api: FuenteApiUrl;          // URL del API consultado
   created_at: string;       // createdAt (ISO)
 }
 

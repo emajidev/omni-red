@@ -179,10 +179,14 @@ export class SearchSheetComponent {
   readonly rows = computed(() => this.result()?.data ?? []);
   readonly totalCount = computed(() => this.result()?.total ?? 0);
 
-  /** Totales del contexto de búsqueda; antes del primer fetch usa las métricas globales. */
+  /**
+   * Totales de la cabecera del buscador: SIEMPRE las métricas globales (las
+   * mismas del encabezado de la app). Antes usábamos `result().totals` (los
+   * totales de la BD local del contexto de búsqueda), pero eso hacía que las
+   * cifras "saltaran" a números distintos al resolverse la consulta. El número
+   * de resultados de la búsqueda actual se muestra aparte en `totalCount()`.
+   */
   readonly totals = computed(() => {
-    const r = this.result();
-    if (r) return r.totals;
     const m = this.data.metrics();
     return {
       personas: m.total_reportados,

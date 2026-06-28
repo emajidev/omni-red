@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, AfterViewInit, signal, computed, effect } from '@angular/core';
 
 // ... other imports remain the same ...
 import { FormsModule } from '@angular/forms';
@@ -10,6 +10,7 @@ import { OcrSheetComponent } from './features/ocr/ocr-sheet.component';
 import { CentersSheetComponent } from './features/centers/centers-sheet.component';
 import { SismosSheetComponent } from './features/sismos/sismos-sheet.component';
 import { TimelineBarComponent } from './features/timeline/timeline-bar.component';
+import { LiteHomeComponent } from './features/lite/lite-home.component';
 import { FacilitiesSheetComponent } from './features/facilities/facilities-sheet.component';
 import { BuildingsSheetComponent } from './features/buildings/buildings-sheet.component';
 import { ReportBuildingSheetComponent } from './features/report-building/report-building-sheet.component';
@@ -18,6 +19,7 @@ import { BottomSheetComponent } from './shared/bottom-sheet/bottom-sheet.compone
 
 import { CrisisDataService } from './core/services/crisis-data.service';
 import { MapLayer, UiService } from './core/services/ui.service';
+import { ConnectionService } from './core/services/connection.service';
 import { PresenceService } from './core/services/presence.service';
 import { PersonReport } from './core/models/models';
 import { CRISIS_SINCE, statusColor, timeAgo } from './core/util/labels';
@@ -32,7 +34,8 @@ declare var gsap: any;
     FormsModule, CountUpDirective, CrisisMapComponent,
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent,
     SismosSheetComponent, FacilitiesSheetComponent, BuildingsSheetComponent,
-    ReportBuildingSheetComponent, BottomSheetComponent, TimelineBarComponent
+    ReportBuildingSheetComponent, BottomSheetComponent, TimelineBarComponent,
+    LiteHomeComponent
   ],
   template: `
     <!-- 3 Second Splash Screen -->
@@ -90,8 +93,12 @@ declare var gsap: any;
       </div>
     }
 
-    <!-- ===== Single view: the map IS the canvas ===== -->
+    <!-- ===== Single view: the map IS the canvas (o la vista ligera) ===== -->
     <main class="relative h-[100dvh] w-full overflow-hidden">
+
+      @if (conn.lite()) {
+        <app-lite-home />
+      } @else {
       <app-crisis-map></app-crisis-map>
 
       <!-- ===== Ticker sísmico (franja superior, ≤30px) ===== -->
@@ -113,7 +120,7 @@ declare var gsap: any;
 
       <!-- ===== Top overlay: brand + live metrics in a themed glass bar ===== -->
       <header class="pointer-events-none absolute inset-x-0 top-7 z-[500] p-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
+        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] sm:max-w-[600px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
           <!-- Centered Brand -->
           <div class="flex items-center gap-2">
             <span class="text-2xl font-black tracking-tight">SomosUnoVzla</span>
@@ -131,23 +138,23 @@ declare var gsap: any;
           </div>
 
           <!-- Live metrics — semantic pills (20% bg opacity, solid text) -->
-          <div class="flex flex-wrap justify-center gap-2">
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 border-[0.5px] rounded-full" style="background: var(--chip-bg); color: var(--txt-muted); border-color: var(--divider);">
+          <div class="flex flex-nowrap justify-center gap-2">
+            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 border-[0.5px] rounded-full" style="background: var(--chip-bg); color: var(--txt-muted); border-color: var(--divider);">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().total_reportados"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">total</span>
             </span>
-            <span class="flex items-center gap-1.5 px-3 py-1 bg-[#ef4444]/20 text-[#ef4444] border-[0.5px] border-[#ef4444]/30 rounded-full">
+            <span class="flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#ef4444]/20 text-[#ef4444] border-[0.5px] border-[#ef4444]/30 rounded-full">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().desaparecidos"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">desap.</span>
             </span>
-            <span class="flex items-center gap-1.5 px-3 py-1 bg-[#22c55e]/20 text-[#22c55e] border-[0.5px] border-[#22c55e]/30 rounded-full">
+            <span class="flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#22c55e]/20 text-[#22c55e] border-[0.5px] border-[#22c55e]/30 rounded-full">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().localizados"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">Encontrados</span>
             </span>
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-[#3b82f6]/20 text-[#3b82f6] border-[0.5px] border-[#3b82f6]/30 rounded-full">
+            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#3b82f6]/20 text-[#3b82f6] border-[0.5px] border-[#3b82f6]/30 rounded-full">
               <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().centros_activos"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">acopio</span>
@@ -156,9 +163,20 @@ declare var gsap: any;
         </div>
       </header>
 
-      <!-- ===== Theme toggle (floating, top-right; debajo del ticker) ===== -->
+      <!-- ===== Botón llamativo: versión lite (arriba-izquierda, donde iba el zoom) ===== -->
+      <button (click)="conn.setMode('lite')" aria-label="Cambiar a versión lite (sin mapa)"
+              class="lite-cta pointer-events-auto absolute left-3 top-9 z-[560] flex items-center gap-2 rounded-full py-2 pl-2.5 pr-3.5 text-[13px] font-extrabold text-white transition active:scale-95">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70"></span>
+          <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-white"></span>
+        </span>
+        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/></svg>
+        <span>Versión lite</span>
+      </button>
+
+      <!-- ===== Theme toggle (flotante, arriba-derecha) ===== -->
       <button (click)="ui.toggleTheme()" aria-label="Cambiar tema"
-              class="pointer-events-auto absolute right-3 top-9 z-[550] icon-btn">
+              class="pointer-events-auto absolute right-3 top-9 z-[560] icon-btn">
         @if (ui.theme() === 'dark') {
           <!-- sun -->
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -345,6 +363,7 @@ declare var gsap: any;
 
         </div>
       </nav>
+      }
 
       <!-- ===== Half-screen sheet host ===== -->
       @switch (ui.sheet()) {
@@ -425,15 +444,48 @@ declare var gsap: any;
             font-weight:600; color:#4A5568; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #EDF2F7; transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); }
     .action-chip:active { transform: scale(.94); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .action-chip > :first-child { font-size:1.25rem; margin-bottom: 2px; }
+
+    /* Botón llamativo "Versión lite": degradado ámbar→naranja con brillo pulsante. */
+    .lite-cta {
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      box-shadow: 0 8px 22px rgba(245, 158, 11, .45);
+      animation: lite-cta-glow 2.4s ease-in-out infinite;
+    }
+    .lite-cta:hover { filter: brightness(1.06); }
+    @keyframes lite-cta-glow {
+      0%, 100% { box-shadow: 0 8px 22px rgba(245, 158, 11, .40); }
+      50%      { box-shadow: 0 10px 32px rgba(249, 115, 22, .72); }
+    }
+    @media (prefers-reduced-motion: reduce) { .lite-cta { animation: none; } }
   `]
 })
 export class AppComponent implements OnInit, AfterViewInit {
   data = inject(CrisisDataService);
   ui = inject(UiService);
+  conn = inject(ConnectionService);
   presence = inject(PresenceService);
 
   showSplash = signal(true);
   fadeSplash = signal(false);
+
+  /** Qué conjunto de datos se ha cargado ya (evita descargas duplicadas). */
+  private loaded: 'none' | 'lite' | 'full' = 'none';
+
+  constructor() {
+    // Carga adaptada a la conexión: en modo ligero solo las métricas (sin bajar
+    // el padrón completo); en modo mapa, todo. Reacciona si se cambia de versión.
+    effect(() => {
+      const lite = this.conn.lite();
+      // Diferido: las cargas hacen `loading.set(...)` de forma síncrona y no debe
+      // ocurrir dentro de la ejecución del effect.
+      if (lite) {
+        if (this.loaded === 'none') { this.loaded = 'lite'; queueMicrotask(() => void this.data.loadLite()); }
+      } else if (this.loaded !== 'full') {
+        this.loaded = 'full';
+        queueMicrotask(() => void this.data.loadAll());
+      }
+    });
+  }
 
   /** Panel de capas del mapa (mostrar/ocultar categorías de marcadores). */
   showLayers = signal(false);
@@ -512,7 +564,8 @@ export class AppComponent implements OnInit, AfterViewInit {
 
 
   ngOnInit(): void {
-    this.data.loadAll();
+    // La carga de datos la dispara el efecto del constructor según la versión
+    // (ligera = solo métricas; full = todo).
     this.presence.start();   // contador de usuarios conectados (latido cada 15s)
 
     // 3 second splash screen (2s visible + 1s fade)

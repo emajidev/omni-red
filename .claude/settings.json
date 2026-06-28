@@ -229,7 +229,12 @@
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\" 2>/dev/null; echo \"=== tree \\(no node_modules\\) ===\"; find app -type f \\\\\\( -name '*.ts' -o -name '*.html' -o -name '*.css' \\\\\\) 2>/dev/null | grep -viE 'spec' | sort; echo; echo \"=== sismo/quake/timeline mentions ===\"; grep -rliE 'sismo|quake|terremoto|timeline|linea' app 2>/dev/null | head -30)",
       "Bash(grep -nA12 'interface Quake' models/models.ts)",
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\")",
-      "Bash(grep -rnE 'timelineOn|toggleTimeline|onTimelineToggle' app)"
+      "Bash(grep -rnE 'timelineOn|toggleTimeline|onTimelineToggle' app)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\")",
+      "Bash(grep -nA12 'interface Metrics' src/app/core/models/models.ts)",
+      "Bash(grep -nA8 '\"assets\"' angular.json)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\" 2>/dev/null; echo \"=== refs a loadMetricsOnly \\(debe ser 0\\) ===\"; grep -rn 'loadMetricsOnly' app 2>/dev/null || echo \"  \\(ninguna\\)\"; echo \"=== refs a conn / lite ===\"; grep -rnE 'conn\\\\.\\(lite|setMode|detectedSlow\\)|loadLite' app | wc -l)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\" 2>/dev/null; echo \"=== styles.css leaflet/omni rules ===\"; grep -nE 'leaflet|omni-quake|omni-pop|zoom' src/styles.css | head -40; echo \"=== styles.css size ===\"; wc -l src/styles.css)"
     ],
     "additionalDirectories": [
       "\\tmp"

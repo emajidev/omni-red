@@ -301,8 +301,11 @@ html.light .sheet-panel .divide-white\/5 > * + * { border-color: var(--divider) 
 .leaflet-control-zoom-in  { border-radius: 14px 14px 0 0 !important; }
 .leaflet-control-zoom-out { border-radius: 0 0 14px 14px !important; border-bottom: none !important; }
 .leaflet-control-zoom a:hover { background: var(--glass-strong) !important; }
-/* Bajar el control de zoom ~20px para despejar el ticker/cabecera */
-.leaflet-top.leaflet-left { margin-top: 20px; }
+/* Control de zoom: esquina inferior derecha, con 50px de margen. */
+.leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  margin-right: 50px !important;
+  margin-bottom: 50px !important;
+}
 .leaflet-control-attribution {
   background: var(--glass) !important;
   color: var(--txt-muted) !important;

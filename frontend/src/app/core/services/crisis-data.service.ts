@@ -103,6 +103,31 @@ export class CrisisDataService {
     }
   }
 
+  /**
+   * Carga LIGERA para el modo de conexión lenta (vista sin mapa). Trae todo lo
+   * que necesitan las hojas y métricas (centros, edificios, sismos y totales
+   * externos) EXCEPTO el padrón completo de personas (`getAllPersonas`), que es
+   * el payload grande y solo hace falta para los marcadores del mapa. La
+   * búsqueda usa el listado paginado del servidor, así que sigue funcionando.
+   */
+  async loadLite(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const [centers, quakes, edificios, extMetrics] = await Promise.all([
+        this.api.getCentros().catch(() => [] as ReliefCenter[]),
+        this.api.getSismos().catch(() => [] as Quake[]),
+        this.api.getEdificios().catch(() => [] as CollapsedBuilding[]),
+        this.api.getExternalMetrics().catch(() => null),
+      ]);
+      this.centers.set(centers);
+      this.quakes.set(quakes);
+      this.edificios.set(edificios);
+      this.externalMetrics.set(extMetrics);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   // ==========================================================================
   // Listado paginado de personas (búsqueda + filtros, lado servidor)
   // ==========================================================================

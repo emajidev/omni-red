@@ -123,6 +123,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       maxBoundsViscosity: 1.0,
     });
 
+    // Botones de zoom en la esquina inferior derecha (margen de 50px vía CSS).
+    this.map.zoomControl.setPosition('bottomright');
+
     // Basemap matches the active theme (light Voyager / dark Dark Matter).
     this.applyTiles(this.ui.theme());
 

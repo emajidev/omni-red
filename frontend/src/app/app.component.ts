@@ -126,13 +126,8 @@ declare var gsap: any;
           <!-- Fila 1: versión lite · marca · tema + capas -->
           <div class="flex items-center justify-between gap-2">
             <button (click)="conn.setMode('lite')" aria-label="Cambiar a versión lite (sin mapa)"
-                    class="lite-cta flex shrink-0 items-center gap-1.5 rounded-full py-1.5 px-2.5 text-[12px] font-extrabold text-white transition active:scale-95">
-              <span class="relative flex h-2 w-2">
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70"></span>
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
-              </span>
-              <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/></svg>
-              <span class="hidden sm:inline">Versión lite</span>
+                    class="lite-cta shrink-0 rounded-full py-1.5 px-4 text-[13px] font-extrabold uppercase tracking-wider text-white transition active:scale-95">
+              LITE
             </button>
 
             <div class="flex min-w-0 flex-1 items-center justify-center gap-2">
@@ -187,7 +182,6 @@ declare var gsap: any;
               <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().centros_activos"></span>
               <span class="lbl font-light uppercase tracking-wider text-[10px]">acopio</span>
             </span>
-          </div>
           </div>
 
         </div>
@@ -459,6 +453,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   showSplash = signal(true);
   fadeSplash = signal(false);
+
+  /** Panel de capas del mapa: visible u oculto (se alterna desde la cabecera). */
+  showLayers = signal(false);
 
   /** Qué conjunto de datos se ha cargado ya (evita descargas duplicadas). */
   private loaded: 'none' | 'lite' | 'full' = 'none';

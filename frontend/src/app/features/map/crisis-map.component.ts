@@ -118,7 +118,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       // El zoom inicial es el mínimo: no se puede alejar (sin huecos vacíos),
       // solo acercar. El paneo se acota a la región (Venezuela + Caribe).
       minZoom: CrisisMapComponent.INITIAL_ZOOM,
-      maxZoom: 30,
+      // 18 es suficiente (los tiles llegan a 16-19); 30 forzaba un reescalado
+      // extremo que en móvil colgaba el mapa al hacer zoom.
+      maxZoom: 18,
       maxBounds: L.latLngBounds(CrisisMapComponent.MAX_BOUNDS),
       maxBoundsViscosity: 1.0,
     });
@@ -137,29 +139,36 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     
     // Configuración de Agrupación (Clusters)
     const clusterOptions = {
-      maxClusterRadius: 55,
+      maxClusterRadius: 60,
       disableClusteringAtZoom: 17,
       spiderfyOnMaxZoom: true,
+      // Rendimiento en móvil con muchos marcadores: inserta los pines en lotes
+      // (no congela el hilo) y solo dibuja los que están en pantalla.
+      chunkedLoading: true,
+      removeOutsideVisibleBounds: true,
+      animate: false,
       iconCreateFunction: (cluster: any) => {
         const count = cluster.getChildCount();
-        const markers = cluster.getAllChildMarkers();
-        let missing = 0;
-        let safe = 0;
-        let isCenter = false;
-        
-        for (const m of markers) {
-          if (m.options.omniType === 'center') isCenter = true;
-          if (m.options.omniStatus === 'desaparecido') missing++;
-          else if (m.options.omniStatus === 'encontrado') safe++;
-        }
-        
         let cls = 'bg-white/90 text-gray-800 border-black/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)]';
-        
-        if (!isCenter && (missing > 0 || safe > 0)) {
-          const isMissingMajority = missing >= safe;
-          cls = isMissingMajority
-            ? 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30 shadow-none'
-            : 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/30 shadow-none';
+
+        // El desglose desaparecidos/encontrados recorre los marcadores hijos; en
+        // clusters grandes son miles de iteraciones por icono y en cada zoom
+        // (se atascaba en móvil). Solo lo calculamos en clusters pequeños.
+        if (count <= 200) {
+          const markers = cluster.getAllChildMarkers();
+          let missing = 0;
+          let safe = 0;
+          let isCenter = false;
+          for (const m of markers) {
+            if (m.options.omniType === 'center') isCenter = true;
+            if (m.options.omniStatus === 'desaparecido') missing++;
+            else if (m.options.omniStatus === 'encontrado') safe++;
+          }
+          if (!isCenter && (missing > 0 || safe > 0)) {
+            cls = missing >= safe
+              ? 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30 shadow-none'
+              : 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/30 shadow-none';
+          }
         }
 
         return L.divIcon({

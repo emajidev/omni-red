@@ -318,6 +318,14 @@ html.light .sheet-panel .divide-white\/5 > * + * { border-color: var(--divider) 
 @media (max-width: 639px) {
   .leaflet-bottom.leaflet-right { bottom: 80px; }
   .leaflet-bottom.leaflet-left  { bottom: 80px; }
+
+  /* Rendimiento: en móvil desactivamos las animaciones infinitas de los
+     marcadores (anillos de sismo y latidos). Repintaban en cada frame y, con
+     muchos marcadores, atascaban el mapa al hacer zoom / paneo. */
+  .omni-quake::before, .omni-quake::after,
+  .omni-quake--major::before, .omni-quake--major::after,
+  .omni-pin--pulse::after,
+  .omni-building--trapped::after { display: none !important; }
 }
 
 /* ---------------------------------------------------------------------------

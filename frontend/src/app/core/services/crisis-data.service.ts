@@ -31,6 +31,9 @@ export class CrisisDataService {
   readonly edificios = signal<CollapsedBuilding[]>([]);
   readonly loading = signal<boolean>(true);
 
+  /** Contador acumulado de visitas (se llena con {@link trackVisita}). */
+  readonly visitas = signal<number>(0);
+
   /**
    * Resultados del registro médico EXTERNO de fvivemas para el término de
    * búsqueda actual (solo lectura). La fuente y la lógica viven en el backend
@@ -126,6 +129,23 @@ export class CrisisDataService {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Registra/lee el contador de visitas y publica el total en {@link visitas}.
+   * Solo INCREMENTA una vez por sesión de pestaña (sessionStorage); en cargas
+   * posteriores de la misma sesión solo lee el total. Resiliente: ante fallo
+   * deja el contador en su valor previo (0).
+   */
+  async trackVisita(): Promise<void> {
+    const KEY = 'somosuno-visita';
+    let yaContada = false;
+    try { yaContada = !!sessionStorage.getItem(KEY); } catch { /* modo privado */ }
+    try {
+      const res = yaContada ? await this.api.getVisitas() : await this.api.registrarVisita();
+      if (!yaContada) { try { sessionStorage.setItem(KEY, '1'); } catch { /* */ } }
+      this.visitas.set(res?.total ?? 0);
+    } catch { /* contador no disponible */ }
   }
 
   // ==========================================================================

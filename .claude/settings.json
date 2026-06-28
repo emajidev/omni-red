@@ -234,7 +234,8 @@
       "Bash(grep -nA12 'interface Metrics' src/app/core/models/models.ts)",
       "Bash(grep -nA8 '\"assets\"' angular.json)",
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\" 2>/dev/null; echo \"=== refs a loadMetricsOnly \\(debe ser 0\\) ===\"; grep -rn 'loadMetricsOnly' app 2>/dev/null || echo \"  \\(ninguna\\)\"; echo \"=== refs a conn / lite ===\"; grep -rnE 'conn\\\\.\\(lite|setMode|detectedSlow\\)|loadLite' app | wc -l)",
-      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\" 2>/dev/null; echo \"=== styles.css leaflet/omni rules ===\"; grep -nE 'leaflet|omni-quake|omni-pop|zoom' src/styles.css | head -40; echo \"=== styles.css size ===\"; wc -l src/styles.css)"
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\" 2>/dev/null; echo \"=== styles.css leaflet/omni rules ===\"; grep -nE 'leaflet|omni-quake|omni-pop|zoom' src/styles.css | head -40; echo \"=== styles.css size ===\"; wc -l src/styles.css)",
+      "WebFetch(domain:centro-acopio-one.vercel.app)"
     ],
     "additionalDirectories": [
       "\\tmp"

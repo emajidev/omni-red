@@ -128,7 +128,13 @@ import { CountUpDirective } from '../../shared/count-up.directive';
           </div>
         </div>
 
-        <p class="mt-10 text-[11px] leading-relaxed" style="color: var(--txt-muted)">
+        <div class="mt-9 flex items-center justify-center gap-1.5 text-[13px] font-bold" style="color: var(--txt-muted)">
+          <span>👁</span>
+          <span [appCountUp]="data.visitas()"></span>
+          <span class="font-semibold">visitas</span>
+        </div>
+
+        <p class="mt-6 text-[11px] leading-relaxed" style="color: var(--txt-muted)">
           Información de dominio público recopilada de fuentes abiertas. Ante una emergencia, contacta siempre a los organismos oficiales de protección civil y rescate.
         </p>
       </main>

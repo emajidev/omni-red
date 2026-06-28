@@ -12,6 +12,7 @@ import { SismosModule } from './sismos/sismos.module';
 import { MetricasModule } from './metricas/metricas.module';
 import { ListasModule } from './listas/listas.module';
 import { AuthModule } from './auth/auth.module';
+import { VisitasModule } from './visitas/visitas.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuthModule } from './auth/auth.module';
     MetricasModule,
     ListasModule,
     AuthModule,
+    VisitasModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -207,6 +207,19 @@ export class ApiService {
     );
   }
 
+  // ---- Visitas (contador acumulado) ----------------------------------------
+  /** Registra una visita y devuelve el total acumulado. */
+  registrarVisita(): Promise<{ total: number }> {
+    return firstValueFrom(
+      this.http.post<{ total: number }>(`${this.base}/visitas`, {}),
+    );
+  }
+
+  /** Lee el total de visitas (sin incrementar). */
+  getVisitas(): Promise<{ total: number }> {
+    return firstValueFrom(this.http.get<{ total: number }>(`${this.base}/visitas`));
+  }
+
   // ---- Auth (gate de carga) ------------------------------------------------
   /** Valida credenciales de admin contra el backend. true si son correctas. */
   async login(usuario: string, password: string): Promise<boolean> {

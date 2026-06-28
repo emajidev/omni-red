@@ -273,6 +273,9 @@ declare var gsap: any;
             </span>
             <span class="text-[12px] font-extrabold" style="color: var(--txt)">{{ presence.online() }}</span>
             <span class="text-[11px] font-semibold" style="color: var(--txt-muted)">en línea</span>
+            <span class="ml-auto flex items-center gap-1 text-[11px] font-semibold" style="color: var(--txt-muted)">
+              👁 <b class="font-extrabold" style="color: var(--txt)">{{ data.visitas() }}</b> visitas
+            </span>
           </div>
 
         </aside>
@@ -553,6 +556,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     // La carga de datos la dispara el efecto del constructor según la versión
     // (ligera = solo métricas; full = todo).
     this.presence.start();   // contador de usuarios conectados (latido cada 15s)
+    void this.data.trackVisita();   // contador de visitas acumuladas
 
     // 3 second splash screen (2s visible + 1s fade)
     setTimeout(() => {

@@ -1,16 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ExternalPerson, FvivemasMetrics } from './external-search.service';
+import { relevance } from './text-match';
 
 /**
  * Fuente EXTERNA "ayuda-api" (https://ayuda-api-...run.app), un agregador
  * (FastAPI sobre Firestore) que indexa varias fuentes públicas de personas del
- * terremoto (sos_venezuela_2026, desaparecidosvenezuela, …).
+ * terremoto.
  *
- * Expone búsqueda (`/api/search`, `/api/live-search`) pero NO un endpoint de
- * totales por estado: `/api/search` limita a 400 resultados por consulta y
- * `/api/search-stats` solo da el total por fuente. Por eso los totales por
- * estado (desaparecidos / encontrados) se obtienen con un BARRIDO de términos
- * frecuentes, deduplicado por `_id` y CACHEADO con TTL.
+ * Tiene DOS superficies de personas que combinamos para maximizar cobertura
+ * (eran ~19k cuando solo usábamos la primera):
+ *  - `/api/search`   → índice `people_db` (sos_venezuela_2026 + desaparecidosvenezuela).
+ *  - `/api/personas` → feed agregado de OTRAS fuentes que `/api/search` no
+ *    devuelve por defecto: Venezuela Reporta, hospitalesenvenezuela.com y el
+ *    feed completo de Desaparecidos Venezuela.
+ *
+ * No expone un endpoint de totales por estado (`/api/search-stats` solo da el
+ * total por fuente, y cada búsqueda topa en 400 resultados), así que los totales
+ * por estado (desaparecidos / encontrados) se obtienen con un BARRIDO de
+ * términos frecuentes sobre AMBAS superficies, deduplicado y CACHEADO con TTL.
  *
  * Config por entorno: AYUDA_API_BASE.
  */
@@ -49,18 +56,45 @@ export class AyudaSearchService {
   // ==========================================================================
   // Búsqueda (para el buscador del frontend)
   // ==========================================================================
-  /** Busca en el índice agregado de ayuda-api y normaliza a {@link ExternalPerson}. */
+  /**
+   * Busca en AMBAS superficies de ayuda-api (`/api/search` + `/api/personas`)
+   * EN PARALELO, normaliza a {@link ExternalPerson}, ordena por relevancia a la
+   * consulta (ambos orígenes en una sola escala) y recorta a {@link MAX_RESULTS}.
+   * Así afloran personas que solo están en Venezuela Reporta / hospitales /
+   * Desaparecidos Venezuela y antes se perdían.
+   */
   async searchExternal(query: string): Promise<ExternalPerson[]> {
     const q = (query ?? '').trim();
     if (q.length < 2) return [];
-    const rows = await this.fetchSearch(q, this.MAX_RESULTS);
-    const out: ExternalPerson[] = [];
-    for (const r of rows) {
+
+    const [searchRows, personaRows] = await Promise.all([
+      this.fetchSearch(q, this.MAX_RESULTS),
+      this.fetchPersonas(q, this.MAX_RESULTS),
+    ]);
+
+    const mapped: ExternalPerson[] = [];
+    for (const r of searchRows) {
       const p = this.mapRow(r);
-      if (p) out.push(p);
-      if (out.length >= this.MAX_RESULTS) break;
+      if (p) mapped.push(p);
     }
-    return out;
+    for (const r of personaRows) {
+      const p = this.mapPersona(r);
+      if (p) mapped.push(p);
+    }
+
+    return mapped
+      .map((p) => ({
+        p,
+        score: relevance(q, [
+          { text: p.nombre, weight: 1 },
+          { text: p.cedula, weight: 0.95 },
+          { text: p.ubicacion, weight: 0.7 },
+          { text: p.detalle, weight: 0.5 },
+        ]),
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, this.MAX_RESULTS)
+      .map((s) => s.p);
   }
 
   // ==========================================================================
@@ -90,18 +124,26 @@ export class AyudaSearchService {
     return this.metricsInflight;
   }
 
-  /** Barre el índice por términos frecuentes, deduplica por `_id` y cuenta por estado. */
+  /**
+   * Barre AMBAS superficies (`/api/search` + `/api/personas`) por términos
+   * frecuentes, deduplica por id y cuenta por estado. Las dos viven en espacios
+   * de id distintos, así que se cuentan como personas distintas.
+   */
   private async sweep(): Promise<FvivemasMetrics> {
     const seen = new Map<string, string>(); // id -> status crudo
     for (let i = 0; i < this.SWEEP_TERMS.length; i += this.BATCH) {
       const batch = this.SWEEP_TERMS.slice(i, i + this.BATCH);
-      const pages = await Promise.all(
-        batch.map((t) => this.fetchSearch(t, this.PER_QUERY_LIMIT)),
-      );
-      for (const rows of pages) {
+      const [searchPages, personaPages] = await Promise.all([
+        Promise.all(batch.map((t) => this.fetchSearch(t, this.PER_QUERY_LIMIT))),
+        Promise.all(batch.map((t) => this.fetchPersonas(t, this.PER_QUERY_LIMIT))),
+      ]);
+      for (const rows of searchPages) {
+        for (const r of rows) seen.set(this.rowId(r), this.rawStatus(r));
+      }
+      for (const rows of personaPages) {
         for (const r of rows) {
-          const id = this.rowId(r);
-          seen.set(id, this.rawStatus(r));
+          const id = `personas:${(r.doc_id ?? '').toString().trim() || (r.full_name ?? '')}`;
+          seen.set(id, (r.estado ?? '').toString());
         }
       }
     }
@@ -132,6 +174,24 @@ export class AyudaSearchService {
     }
   }
 
+  /**
+   * Consulta el feed `/api/personas` (Venezuela Reporta + hospitalesenvenezuela.com
+   * + Desaparecidos Venezuela). Mismo contrato resiliente que {@link fetchSearch}:
+   * ante cualquier fallo degrada a lista vacía.
+   */
+  private async fetchPersonas(q: string, limit: number): Promise<AyudaPersonaRow[]> {
+    const url =
+      `${this.base}/api/personas?q=${encodeURIComponent(q)}&limit=${limit}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return [];
+      const data = (await res.json()) as { results?: AyudaPersonaRow[] };
+      return data.results ?? [];
+    } catch {
+      return [];
+    }
+  }
+
   private rowId(r: AyudaRow): string {
     return r._id || r.doc_id || `${r.full_name ?? ''}|${r.source ?? ''}`;
   }
@@ -147,6 +207,7 @@ export class AyudaSearchService {
       n === 'seeking_info' ||
       n.startsWith('desaparecid') ||
       n.startsWith('se busca') ||
+      n.startsWith('buscad') || // estado "BUSCADO"/"BUSCADA" del feed /api/personas
       n.startsWith('extraviad')
     ) {
       return 'desaparecido';
@@ -197,6 +258,41 @@ export class AyudaSearchService {
     };
   }
 
+  /**
+   * Normaliza un registro del feed `/api/personas` (Venezuela Reporta /
+   * hospitalesenvenezuela.com / Desaparecidos Venezuela) a {@link ExternalPerson}.
+   * Trae cédula, edad y coordenadas; el `id` va en su propio espacio
+   * (`ayuda:personas:…`) para no colisionar con `/api/search`.
+   */
+  private mapPersona(r: AyudaPersonaRow): ExternalPerson | null {
+    const nombre = (r.full_name ?? '').toString().trim();
+    if (!nombre) return null;
+
+    const ubicacion = (r.ciudad_zona ?? '').toString().trim() || 'Ubicación no indicada';
+    const detalle =
+      [r.estado, r.descripcion]
+        .map((v) => (v ?? '').toString().trim())
+        .filter(Boolean)
+        .join(' · ') || null;
+    const edadNum = typeof r.edad === 'number' ? r.edad : Number(r.edad);
+    const id = (r.doc_id ?? '').toString().trim() || `${nombre}|${r.source ?? ''}`;
+
+    return {
+      id: `ayuda:personas:${id}`,
+      nombre,
+      cedula: (r.cedula ?? '').toString().trim() || null,
+      edad: Number.isFinite(edadNum) && edadNum > 0 ? edadNum : null,
+      ubicacion,
+      lat: typeof r.lat === 'number' ? r.lat : null,
+      lng: typeof r.lng === 'number' ? r.lng : null,
+      telefono_contacto: null,
+      detalle,
+      fuente: 'ayuda',
+      fuente_api: `${this.base}/api/personas`,
+      created_at: new Date(0).toISOString(), // el feed no expone fecha de ingesta
+    };
+  }
+
   /** minúsculas + sin acentos, para comparar de forma robusta. */
   private norm(s: string): string {
     return (s ?? '')
@@ -226,4 +322,22 @@ interface AyudaRow {
     municipio?: string;
     source_date?: string;
   };
+}
+
+// --- Forma (parcial) de un resultado de /api/personas ------------------------
+interface AyudaPersonaRow {
+  full_name?: string;
+  doc_id?: string;
+  cedula?: string;
+  edad?: number | string;
+  genero?: string;
+  estado?: string; // BUSCADO | SANO_SALVO | INFO_RECIBIDA | …
+  ciudad_zona?: string;
+  descripcion?: string;
+  foto_url?: string;
+  source?: string; // "Venezuela Reporta" | "hospitalesenvenezuela.com" | "Desaparecidos Venezuela"
+  ficha_url?: string;
+  image_urls?: string[];
+  lat?: number;
+  lng?: number;
 }

@@ -51,6 +51,14 @@ export class UiService {
   /** Signal the map observes to recenter / open a marker. */
   readonly focus = signal<MapFocus | null>(null);
 
+  // --- Línea de tiempo de sismos -------------------------------------------
+  /**
+   * Cursor de la línea de tiempo (ms epoch): el mapa solo muestra los sismos
+   * ocurridos HASTA esta fecha. La barra (siempre visible) lo controla; por
+   * defecto = ahora, así de inicio se ven todos los sismos de la crisis.
+   */
+  readonly timelineAt = signal<number>(Date.now());
+
   /** Selected report id (highlighted in list/map). */
   readonly selectedId = signal<string | null>(null);
 

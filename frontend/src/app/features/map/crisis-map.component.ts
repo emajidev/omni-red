@@ -48,6 +48,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   private tileLayer: any;
   private outlineLayer: any;
   private markersById = new Map<string, any>();
+  private quakeMarkersById = new Map<string, any>();
 
   // CartoDB raster tiles — light (Voyager) y oscuro (Dark Matter).
   private static readonly TILES = {
@@ -73,10 +74,18 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const people = this.data.people();
       const centers = this.data.centers();
-      const quakes = this.data.quakes();
       const buildings = this.data.edificios();
       this.ui.layers(); // dependencia: re-render al conmutar capas
-      if (this.map) this.renderMarkers(people, centers, quakes, buildings);
+      if (this.map) this.renderMarkers(people, centers, buildings);
+    });
+
+    // Sismos en su PROPIA capa/efecto: así la línea de tiempo (cursor) re-pinta
+    // solo los epicentros — barato y fluido — sin reconstruir personas/centros.
+    effect(() => {
+      const quakes = this.data.quakes();
+      this.ui.layers();      // dependencia: vis.sismos
+      this.ui.timelineAt();  // dependencia: mover el cursor de la línea de tiempo
+      if (this.map) this.renderQuakes(quakes);
     });
 
     // Swap the basemap when the theme toggles.
@@ -94,7 +103,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       if (f && this.map) {
         this.map.flyTo([f.lat, f.lng], f.zoom ?? 15, { duration: 0.8 });
         if (f.id) {
-          const m = this.markersById.get(f.id);
+          const m = this.markersById.get(f.id) ?? this.quakeMarkersById.get(f.id);
           if (m) setTimeout(() => m.openPopup(), 650);
         }
       }
@@ -194,7 +203,8 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       );
     });
 
-    this.renderMarkers(this.data.people(), this.data.centers(), this.data.quakes(), this.data.edificios());
+    this.renderMarkers(this.data.people(), this.data.centers(), this.data.edificios());
+    this.renderQuakes(this.data.quakes());
 
     // Force Leaflet to recalculate map container size after DOM insertion
     setTimeout(() => {
@@ -296,65 +306,18 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // --- Markers --------------------------------------------------------------
+  // --- Markers (personas / centros / edificios) -----------------------------
   private renderMarkers(
-    people: PersonReport[], centers: ReliefCenter[], quakes: Quake[] = [],
+    people: PersonReport[], centers: ReliefCenter[],
     buildings: CollapsedBuilding[] = []
   ): void {
     this.peopleLayer.clearLayers();
     this.centersLayer.clearLayers();
-    this.quakesLayer.clearLayers();
     this.buildingsLayer.clearLayers();
     this.markersById.clear();
 
     // Capas visibles (control de mostrar/ocultar categorías).
     const vis = this.ui.layers();
-
-    // Epicentros de sismos (datos del endpoint /sismos).
-    // El mapa solo muestra los de la crisis actual (desde CRISIS_SINCE);
-    // el histórico (botón Sismos) los muestra todos.
-    const crisisQuakes = vis.sismos
-      ? quakes.filter((q) => new Date(q.ocurrido_en) >= CRISIS_SINCE)
-      : [];
-    // Los DOS de mayor magnitud se resaltan: marcador más grande + etiqueta fija.
-    const topQuakeIds = new Set(
-      [...crisisQuakes].sort((a, b) => b.magnitud - a.magnitud).slice(0, 2).map((q) => q.id)
-    );
-    for (const q of crisisQuakes) {
-      const isMajor = topQuakeIds.has(q.id);
-      const base = Math.round(12 + Math.min(q.magnitud, 8) * 2); // 12–28px según magnitud
-      const size = isMajor ? base + 10 : base;
-      const cls = isMajor ? 'omni-quake omni-quake--major' : 'omni-quake';
-
-      // Área aproximada afectada (radio según magnitud).
-      L.circle([q.lat, q.lng], {
-        radius: this.quakeRadiusKm(q.magnitud) * 1000,
-        color: isMajor ? '#ef4444' : '#f59e0b',
-        weight: 1,
-        opacity: 0.5,
-        fillColor: isMajor ? '#ef4444' : '#f59e0b',
-        fillOpacity: isMajor ? 0.1 : 0.07,
-        interactive: false
-      }).addTo(this.quakesLayer);
-
-      const marker = L.marker([q.lat, q.lng], {
-        zIndexOffset: isMajor ? 1000 : 0,
-        icon: L.divIcon({
-          className: '',
-          html: `<div class="${cls}" style="width:${size}px;height:${size}px"><span class="omni-quake-mag">${q.magnitud.toFixed(1)}</span></div>`,
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2]
-        })
-      }).bindPopup(this.quakePopup(q), { maxWidth: 280 });
-      if (isMajor) {
-        marker.bindTooltip(
-          `M${q.magnitud.toFixed(1)} · ${this.esc(q.epicentro)}`,
-          { permanent: true, direction: 'top', className: 'omni-quake-label', offset: [0, -size / 2] }
-        );
-      }
-      marker.addTo(this.quakesLayer);
-      this.markersById.set(q.id, marker);
-    }
 
     if (vis.personas) {
       for (const p of people) {
@@ -408,6 +371,67 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         marker.addTo(this.buildingsLayer);
         this.markersById.set(b.id, marker);
       }
+    }
+  }
+
+  // --- Sismos (capa propia + filtro de línea de tiempo) ---------------------
+  /**
+   * Pinta los epicentros de la crisis (desde {@link CRISIS_SINCE}). Si la línea
+   * de tiempo está activa, solo los ocurridos HASTA `ui.timelineAt()` — así, al
+   * mover la barra, los sismos se van colocando en el mapa por orden cronológico.
+   */
+  private renderQuakes(quakes: Quake[]): void {
+    this.quakesLayer.clearLayers();
+    this.quakeMarkersById.clear();
+
+    if (!this.ui.layers().sismos) return;
+
+    // Solo los de la crisis (desde CRISIS_SINCE) y hasta el cursor de la línea
+    // de tiempo: al mover la barra los sismos se van colocando cronológicamente.
+    const at = this.ui.timelineAt();
+    const crisisQuakes = quakes.filter(
+      (q) => new Date(q.ocurrido_en) >= CRISIS_SINCE && +new Date(q.ocurrido_en) <= at,
+    );
+
+    // Los DOS de mayor magnitud (entre los visibles) se resaltan: marcador más
+    // grande + etiqueta fija.
+    const topQuakeIds = new Set(
+      [...crisisQuakes].sort((a, b) => b.magnitud - a.magnitud).slice(0, 2).map((q) => q.id)
+    );
+    for (const q of crisisQuakes) {
+      const isMajor = topQuakeIds.has(q.id);
+      const base = Math.round(12 + Math.min(q.magnitud, 8) * 2); // 12–28px según magnitud
+      const size = isMajor ? base + 10 : base;
+      const cls = isMajor ? 'omni-quake omni-quake--major' : 'omni-quake';
+
+      // Área aproximada afectada (radio según magnitud).
+      L.circle([q.lat, q.lng], {
+        radius: this.quakeRadiusKm(q.magnitud) * 1000,
+        color: isMajor ? '#ef4444' : '#f59e0b',
+        weight: 1,
+        opacity: 0.5,
+        fillColor: isMajor ? '#ef4444' : '#f59e0b',
+        fillOpacity: isMajor ? 0.1 : 0.07,
+        interactive: false
+      }).addTo(this.quakesLayer);
+
+      const marker = L.marker([q.lat, q.lng], {
+        zIndexOffset: isMajor ? 1000 : 0,
+        icon: L.divIcon({
+          className: '',
+          html: `<div class="${cls}" style="width:${size}px;height:${size}px"><span class="omni-quake-mag">${q.magnitud.toFixed(1)}</span></div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2]
+        })
+      }).bindPopup(this.quakePopup(q), { maxWidth: 280 });
+      if (isMajor) {
+        marker.bindTooltip(
+          `M${q.magnitud.toFixed(1)} · ${this.esc(q.epicentro)}`,
+          { permanent: true, direction: 'top', className: 'omni-quake-label', offset: [0, -size / 2] }
+        );
+      }
+      marker.addTo(this.quakesLayer);
+      this.quakeMarkersById.set(q.id, marker);
     }
   }
 

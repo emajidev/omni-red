@@ -9,6 +9,7 @@ import { ReportSheetComponent } from './features/report/report-sheet.component';
 import { OcrSheetComponent } from './features/ocr/ocr-sheet.component';
 import { CentersSheetComponent } from './features/centers/centers-sheet.component';
 import { SismosSheetComponent } from './features/sismos/sismos-sheet.component';
+import { TimelineBarComponent } from './features/timeline/timeline-bar.component';
 import { FacilitiesSheetComponent } from './features/facilities/facilities-sheet.component';
 import { BuildingsSheetComponent } from './features/buildings/buildings-sheet.component';
 import { ReportBuildingSheetComponent } from './features/report-building/report-building-sheet.component';
@@ -31,7 +32,7 @@ declare var gsap: any;
     FormsModule, CountUpDirective, CrisisMapComponent,
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent,
     SismosSheetComponent, FacilitiesSheetComponent, BuildingsSheetComponent,
-    ReportBuildingSheetComponent, BottomSheetComponent
+    ReportBuildingSheetComponent, BottomSheetComponent, TimelineBarComponent
   ],
   template: `
     <!-- 3 Second Splash Screen -->
@@ -273,6 +274,13 @@ declare var gsap: any;
         </aside>
       }
 
+      <!-- ===== Línea de tiempo de sismos (barra arrastrable, siempre visible) ===== -->
+      @if (!ui.sheet()) {
+        <div class="pointer-events-none absolute inset-x-0 bottom-[5.75rem] z-[560] flex justify-center px-3">
+          <app-timeline-bar />
+        </div>
+      }
+
       <!-- ===== Themed Glass Bottom Navigation ===== -->
       <nav class="absolute inset-x-0 bottom-0 z-[600] flex justify-center px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pointer-events-none gs-nav">
         <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] sm:max-w-[760px] items-center justify-evenly sm:justify-center gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
@@ -501,6 +509,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   focusPerson(p: PersonReport): void {
     this.ui.focusOn({ lat: p.lat, lng: p.lng, id: p.id, zoom: 15 }, false);
   }
+
 
   ngOnInit(): void {
     this.data.loadAll();

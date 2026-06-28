@@ -118,23 +118,51 @@ declare var gsap: any;
         </div>
       </div>
 
-      <!-- ===== Top overlay: brand + live metrics in a themed glass bar ===== -->
-      <header class="pointer-events-none absolute inset-x-0 top-7 z-[500] p-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-        <div class="pointer-events-auto mx-auto flex w-full max-w-[460px] sm:max-w-[600px] flex-col items-center gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
-          <!-- Centered Brand -->
-          <div class="flex items-center gap-2">
-            <span class="text-2xl font-black tracking-tight">SomosUnoVzla</span>
-            <svg class="h-[22px] w-[32px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
-              <rect width="90" height="20" fill="#FCE300"/>
-              <rect y="20" width="90" height="20" fill="#0038A8"/>
-              <rect y="40" width="90" height="20" fill="#CE1126"/>
-              <g fill="#FFF">
-                <circle cx="41" cy="26" r="1.5"/><circle cx="49" cy="26" r="1.5"/>
-                <circle cx="34" cy="27" r="1.5"/><circle cx="56" cy="27" r="1.5"/>
-                <circle cx="28" cy="30" r="1.5"/><circle cx="62" cy="30" r="1.5"/>
-                <circle cx="24" cy="35" r="1.5"/><circle cx="66" cy="35" r="1.5"/>
-              </g>
-            </svg>
+      <!-- ===== Overlay superior: cabecera (lite · marca · tema · capas) + panel de capas ===== -->
+      <div class="pointer-events-none absolute inset-x-0 top-7 z-[500] flex flex-col items-center gap-2 px-3 pt-[max(.75rem,env(safe-area-inset-top))]">
+
+        <div class="pointer-events-auto w-full max-w-[460px] sm:max-w-[600px] flex flex-col gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
+
+          <!-- Fila 1: versión lite · marca · tema + capas -->
+          <div class="flex items-center justify-between gap-2">
+            <button (click)="conn.setMode('lite')" aria-label="Cambiar a versión lite (sin mapa)"
+                    class="lite-cta flex shrink-0 items-center gap-1.5 rounded-full py-1.5 px-2.5 text-[12px] font-extrabold text-white transition active:scale-95">
+              <span class="relative flex h-2 w-2">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70"></span>
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
+              </span>
+              <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/></svg>
+              <span class="hidden sm:inline">Versión lite</span>
+            </button>
+
+            <div class="flex min-w-0 flex-1 items-center justify-center gap-2">
+              <span class="truncate text-lg sm:text-2xl font-black tracking-tight">SomosUnoVzla</span>
+              <svg class="h-[20px] w-[28px] shrink-0 rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+                <rect width="90" height="20" fill="#FCE300"/>
+                <rect y="20" width="90" height="20" fill="#0038A8"/>
+                <rect y="40" width="90" height="20" fill="#CE1126"/>
+              </svg>
+            </div>
+
+            <div class="flex shrink-0 items-center gap-1.5">
+              <button (click)="ui.toggleTheme()" aria-label="Cambiar tema"
+                      class="grid h-9 w-9 place-items-center rounded-full transition active:scale-90" style="background: var(--chip-bg); color: var(--txt)">
+                @if (ui.theme() === 'dark') {
+                  <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+                } @else {
+                  <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                }
+              </button>
+              <button (click)="showLayers.set(!showLayers())" aria-label="Mostrar/ocultar capas del mapa"
+                      class="grid h-9 w-9 place-items-center rounded-full transition active:scale-90"
+                      [style.background]="showLayers() ? 'var(--c-info)' : 'var(--chip-bg)'"
+                      [style.color]="showLayers() ? '#fff' : 'var(--txt)'">
+                <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4l9 5-9 5-9-5 9-5z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 14l9 5 9-5"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <!-- Live metrics — semantic pills (20% bg opacity, solid text) -->
@@ -160,41 +188,14 @@ declare var gsap: any;
               <span class="lbl font-light uppercase tracking-wider text-[10px]">acopio</span>
             </span>
           </div>
+          </div>
+
         </div>
-      </header>
 
-      <!-- ===== Botón llamativo: versión lite (arriba-izquierda, donde iba el zoom) ===== -->
-      <button (click)="conn.setMode('lite')" aria-label="Cambiar a versión lite (sin mapa)"
-              class="lite-cta pointer-events-auto absolute left-3 top-9 z-[560] flex items-center gap-2 rounded-full py-2 pl-2.5 pr-3.5 text-[13px] font-extrabold text-white transition active:scale-95">
-        <span class="relative flex h-2.5 w-2.5">
-          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70"></span>
-          <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-white"></span>
-        </span>
-        <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5z"/></svg>
-        <span>Versión lite</span>
-      </button>
-
-      <!-- ===== Theme toggle (flotante, arriba-derecha) ===== -->
-      <button (click)="ui.toggleTheme()" aria-label="Cambiar tema"
-              class="pointer-events-auto absolute right-3 top-9 z-[560] icon-btn">
-        @if (ui.theme() === 'dark') {
-          <!-- sun -->
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <circle cx="12" cy="12" r="4" />
-            <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
-          </svg>
-        } @else {
-          <!-- moon -->
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-          </svg>
-        }
-      </button>
-
-      <!-- ===== Control de capas del mapa (siempre visible) ===== -->
-      <div class="pointer-events-none absolute right-3 top-[5.5rem] z-[550] flex flex-col items-end gap-2">
-        <div class="pointer-events-auto w-52 rounded-2xl glass-bar p-2 fade-in">
-            <div class="mb-1 flex items-center justify-between px-2 py-1">
+        <!-- Panel de capas (se muestra/oculta con el botón de la cabecera), bajo ella -->
+        @if (showLayers()) {
+          <div class="pointer-events-auto self-end w-auto sm:w-52 rounded-2xl glass-bar p-2 fade-in">
+            <div class="mb-1 hidden sm:flex items-center justify-between px-2 py-1">
               <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--txt-muted)">Capas</span>
               <button (click)="ui.setAllLayers(!allLayersOn())"
                       class="rounded-full px-2.5 py-0.5 text-[11px] font-bold transition active:scale-95"
@@ -207,7 +208,7 @@ declare var gsap: any;
                       class="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-black/5"
                       [style.opacity]="ui.layers()[l.key] ? '1' : '.45'">
                 <span class="text-base leading-none">{{ l.icon }}</span>
-                <span class="flex-1 text-[13px] font-semibold" style="color: var(--txt)">{{ l.label }}</span>
+                <span class="hidden sm:block flex-1 text-[13px] font-semibold" style="color: var(--txt)">{{ l.label }}</span>
                 <span class="relative inline-block h-4 w-7 shrink-0 rounded-full transition-colors"
                       [style.background]="ui.layers()[l.key] ? 'var(--c-info)' : 'var(--chip-bg)'">
                   <span class="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all"
@@ -215,7 +216,8 @@ declare var gsap: any;
                 </span>
               </button>
             }
-        </div>
+          </div>
+        }
       </div>
 
       <!-- ===== Recientes — dos listas apiladas (Desaparecidos / A salvo) ===== -->

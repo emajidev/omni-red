@@ -191,18 +191,9 @@ declare var gsap: any;
         }
       </button>
 
-      <!-- ===== Control de capas del mapa (mostrar/ocultar categorías) ===== -->
+      <!-- ===== Control de capas del mapa (siempre visible) ===== -->
       <div class="pointer-events-none absolute right-3 top-[5.5rem] z-[550] flex flex-col items-end gap-2">
-        <button (click)="showLayers.set(!showLayers())" aria-label="Capas del mapa"
-                class="pointer-events-auto icon-btn">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4l9 5-9 5-9-5 9-5z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 14l9 5 9-5" />
-          </svg>
-        </button>
-
-        @if (showLayers()) {
-          <div class="pointer-events-auto w-52 rounded-2xl glass-bar p-2 fade-in">
+        <div class="pointer-events-auto w-52 rounded-2xl glass-bar p-2 fade-in">
             <div class="mb-1 flex items-center justify-between px-2 py-1">
               <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--txt-muted)">Capas</span>
               <button (click)="ui.setAllLayers(!allLayersOn())"
@@ -224,8 +215,7 @@ declare var gsap: any;
                 </span>
               </button>
             }
-          </div>
-        }
+        </div>
       </div>
 
       <!-- ===== Recientes — dos listas apiladas (Desaparecidos / A salvo) ===== -->
@@ -486,9 +476,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     });
   }
-
-  /** Panel de capas del mapa (mostrar/ocultar categorías de marcadores). */
-  showLayers = signal(false);
 
   /** Categorías conmutables que se listan en el control de capas. */
   readonly layerItems: { key: MapLayer; label: string; icon: string }[] = [

@@ -121,6 +121,23 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.initMapWithRetry();
+  }
+
+  private initMapWithRetry(retries = 0): void {
+    if (typeof L === 'undefined' || !(window as any).L) {
+      if (retries < 30) { // Intenta por 3 segundos (30 * 100ms)
+        setTimeout(() => this.initMapWithRetry(retries + 1), 100);
+      } else {
+        console.error('Error: Leaflet (L) no se pudo cargar después de varios intentos.');
+      }
+      return;
+    }
+
+    this.initializeMap();
+  }
+
+  private initializeMap(): void {
     this.map = L.map(this.mapEl().nativeElement, {
       zoomControl: true,
       attributionControl: true,

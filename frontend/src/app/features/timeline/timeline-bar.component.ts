@@ -27,6 +27,7 @@ import { CRISIS_SINCE } from '../../core/util/labels';
           </svg>
         </span>
         <div class="min-w-0 flex-1 leading-tight">
+          <div>Linea de tiempo · sismos </div>
           <div class="truncate text-[13px] font-extrabold" style="color: var(--txt)">{{ cursorLabel() }}</div>
           <div class="text-[10px] font-semibold" style="color: var(--txt-muted)">
             {{ shownCount() }} de {{ totalCount() }} sismos · desde el 24 jun

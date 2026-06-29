@@ -191,32 +191,55 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       }
     };
 
-    // Cluster para SITIOS (hospitales/refugios/acopios) y EDIFICIOS: icono
-    // neutro de vidrio, distinto al de personas. Cada categoría conserva su
-    // propio grupo (no se mezclan entre sí; cada uno se conmuta con su capa).
-    const siteClusterOptions = {
+    // Cluster de SITIOS/EDIFICIOS: círculo de vidrio TINTADO por categoría +
+    // emoji + conteo, para reconocer de un vistazo qué agrupa (como los pines).
+    const SITE_STYLE: Record<string, { emoji: string; cls: string }> = {
+      hospital: { emoji: '🏥', cls: 'bg-[#ef4444]/25 text-[#ef4444] border-[#ef4444]/40' },
+      refugio:  { emoji: '🏠', cls: 'bg-[#22c55e]/25 text-[#16a34a] border-[#22c55e]/40' },
+      acopio:   { emoji: '📦', cls: 'bg-[#3b82f6]/25 text-[#3b82f6] border-[#3b82f6]/40' },
+      building: { emoji: '🏚️', cls: 'bg-[#f59e0b]/25 text-[#b45309] border-[#f59e0b]/40' },
+    };
+    const siteClusterIcon = (emoji: string, cls: string, count: number) =>
+      L.divIcon({
+        html: `<div class="flex items-center justify-center gap-0.5 w-11 h-11 rounded-full backdrop-blur-md border-[0.5px] font-bold text-[12px] shadow-[0_4px_12px_rgba(0,0,0,0.18)] transition-transform hover:scale-110 ${cls}"><span class="text-[13px] leading-none">${emoji}</span><span>${count}</span></div>`,
+        className: 'omni-cluster-icon',
+        iconSize: [44, 44],
+      });
+
+    const baseSiteOpts = {
       maxClusterRadius: 50,
       disableClusteringAtZoom: 16,
       spiderfyOnMaxZoom: true,
       chunkedLoading: true,
       removeOutsideVisibleBounds: true,
       animate: false,
+    };
+    // Centros: el cluster toma el color/emoji de la categoría DOMINANTE.
+    const centerClusterOptions = {
+      ...baseSiteOpts,
       iconCreateFunction: (cluster: any) => {
-        const count = cluster.getChildCount();
-        return L.divIcon({
-          html: `<div class="flex items-center justify-center w-9 h-9 rounded-full backdrop-blur-md border-[0.5px] border-black/10 bg-white/90 text-gray-800 font-bold text-[13px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-transform hover:scale-110">${count}</div>`,
-          className: 'omni-cluster-icon',
-          iconSize: [36, 36],
-        });
+        const tally: Record<string, number> = { hospital: 0, refugio: 0, acopio: 0 };
+        for (const m of cluster.getAllChildMarkers()) {
+          const t = m.options.omniSite as string;
+          if (t && tally[t] != null) tally[t]++;
+        }
+        const top = Object.keys(tally).reduce((a, b) => (tally[b] > tally[a] ? b : a), 'hospital');
+        return siteClusterIcon(SITE_STYLE[top].emoji, SITE_STYLE[top].cls, cluster.getChildCount());
       },
+    };
+    // Edificios: siempre el estilo de edificio.
+    const buildingClusterOptions = {
+      ...baseSiteOpts,
+      iconCreateFunction: (cluster: any) =>
+        siteClusterIcon(SITE_STYLE['building'].emoji, SITE_STYLE['building'].cls, cluster.getChildCount()),
     };
 
     const LAny = L as any;
     const makeCluster = (opts: any) =>
       (LAny.markerClusterGroup ? LAny.markerClusterGroup(opts) : L.layerGroup()).addTo(this.map);
     this.peopleLayer = makeCluster(clusterOptions);
-    this.centersLayer = makeCluster(siteClusterOptions);
-    this.buildingsLayer = makeCluster(siteClusterOptions);
+    this.centersLayer = makeCluster(centerClusterOptions);
+    this.buildingsLayer = makeCluster(buildingClusterOptions);
 
     // this.drawHighlightZones();
     this.frameVenezuela();

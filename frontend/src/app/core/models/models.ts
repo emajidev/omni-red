@@ -125,6 +125,19 @@ export interface Quake {
   ocurrido_en: string; // ISO
 }
 
+/**
+ * Persona del AGREGADOR externo para pintar en el mapa (deduplicada y con
+ * estado clasificado). `lat`/`lng` pueden venir nulos (people_db solo trae
+ * parroquia) y el cliente las geocodifica por su ubicación.
+ */
+export interface ExternalMapPerson {
+  nombre: string;
+  estado: 'desaparecido' | 'encontrado' | 'desconocido';
+  lat: number | null;
+  lng: number | null;
+  ubicacion: string;
+}
+
 /** Aggregated dashboard metrics (RPC obtener_metricas → these JSON keys). */
 export interface Metrics {
   total_reportados: number;

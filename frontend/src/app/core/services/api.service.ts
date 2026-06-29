@@ -6,6 +6,7 @@ import {
   BatchUploadResult,
   CenterCapacity,
   CollapsedBuilding,
+  ExternalMapPerson,
   ExternalPerson,
   FvivemasMetrics,
   Metrics,
@@ -121,6 +122,13 @@ export class ApiService {
   getExternalMetrics(): Promise<FvivemasMetrics> {
     return firstValueFrom(
       this.http.get<FvivemasMetrics>(`${this.base}/personas/external/metrics`),
+    );
+  }
+
+  /** Personas del agregador externo para pintar en el mapa (con estado/coords). */
+  getExternalMapa(): Promise<ExternalMapPerson[]> {
+    return firstValueFrom(
+      this.http.get<ExternalMapPerson[]>(`${this.base}/personas/external/mapa`),
     );
   }
 

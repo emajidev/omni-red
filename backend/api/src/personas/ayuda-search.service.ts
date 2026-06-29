@@ -49,9 +49,14 @@ export class AyudaSearchService {
     'vida', 'desaparecid', 'encontrad', 'sano', 'encontrado', 'a', 'e', 'i', 'o', 'u',
   ];
 
-  private metricsCache: FvivemasMetrics | null = null;
-  private metricsCacheAt = 0;
-  private metricsInflight: Promise<FvivemasMetrics> | null = null;
+  /** Tope de personas devueltas para el mapa (rendimiento del cliente). */
+  private readonly MAX_MAPA = 4000;
+
+  // Un solo barrido cacheado alimenta TANTO las métricas COMO las personas del
+  // mapa (evita barrer ayuda-api dos veces).
+  private sweepCache: { metrics: FvivemasMetrics; personas: MapaPersona[] } | null = null;
+  private sweepCacheAt = 0;
+  private sweepInflight: Promise<{ metrics: FvivemasMetrics; personas: MapaPersona[] }> | null = null;
 
   // ==========================================================================
   // Búsqueda (para el buscador del frontend)
@@ -101,49 +106,100 @@ export class AyudaSearchService {
   // Totales (desaparecidos / encontrados) — barrido cacheado
   // ==========================================================================
   async metrics(): Promise<FvivemasMetrics> {
-    const fresh = Date.now() - this.metricsCacheAt < this.CACHE_TTL_MS;
-    if (this.metricsCache && fresh) return this.metricsCache;
-    if (this.metricsInflight) return this.metricsInflight;
+    return (await this.sweepData()).metrics;
+  }
 
-    this.metricsInflight = this.sweep()
-      .then((m) => {
-        this.metricsCache = m;
-        this.metricsCacheAt = Date.now();
+  /**
+   * Personas del agregador para PINTAR EN EL MAPA (deduplicadas, con estado
+   * clasificado). Las de `/api/personas` traen lat/lng; las de `/api/search`
+   * (people_db) traen solo la parroquia → el cliente las geocodifica por texto.
+   * Cacheado junto con las métricas; tope {@link MAX_MAPA}.
+   */
+  async personasMapa(): Promise<MapaPersona[]> {
+    const { personas } = await this.sweepData();
+    return personas.slice(0, this.MAX_MAPA);
+  }
+
+  /** Barrido cacheado que produce métricas + lista de personas (una sola pasada). */
+  private sweepData(): Promise<{ metrics: FvivemasMetrics; personas: MapaPersona[] }> {
+    const fresh = Date.now() - this.sweepCacheAt < this.CACHE_TTL_MS;
+    if (this.sweepCache && fresh) return Promise.resolve(this.sweepCache);
+    if (this.sweepInflight) return this.sweepInflight;
+
+    this.sweepInflight = this.sweep()
+      .then((data) => {
+        this.sweepCache = data;
+        this.sweepCacheAt = Date.now();
         this.logger.log(
-          `ayuda-api: ${m.total_reportados} docs (desap ${m.desaparecidos} / loc ${m.localizados})`,
+          `ayuda-api: ${data.metrics.total_reportados} docs · ${data.personas.length} con nombre para el mapa`,
         );
-        return m;
+        return data;
       })
       .catch((err) => {
         this.logger.warn(`No se pudo barrer ayuda-api: ${err?.message ?? err}`);
-        return this.metricsCache ?? { total_reportados: 0, desaparecidos: 0, localizados: 0 };
+        return (
+          this.sweepCache ?? {
+            metrics: { total_reportados: 0, desaparecidos: 0, localizados: 0 },
+            personas: [],
+          }
+        );
       })
       .finally(() => {
-        this.metricsInflight = null;
+        this.sweepInflight = null;
       });
-    return this.metricsInflight;
+    return this.sweepInflight;
   }
 
   /**
    * Barre AMBAS superficies (`/api/search` + `/api/personas`) por términos
-   * frecuentes, deduplica por id y cuenta por estado. Las dos viven en espacios
-   * de id distintos, así que se cuentan como personas distintas.
+   * frecuentes. Cuenta por estado (para las métricas, sobre TODAS las filas) y
+   * recoge las personas CON NOMBRE deduplicadas (para el mapa).
    */
-  private async sweep(): Promise<FvivemasMetrics> {
-    const seen = new Map<string, string>(); // id -> status crudo
+  private async sweep(): Promise<{ metrics: FvivemasMetrics; personas: MapaPersona[] }> {
+    const seen = new Map<string, string>(); // id -> status crudo (métricas, todas)
+    const personas = new Map<string, MapaPersona>(); // id -> persona (mapa, con nombre)
+
     for (let i = 0; i < this.SWEEP_TERMS.length; i += this.BATCH) {
       const batch = this.SWEEP_TERMS.slice(i, i + this.BATCH);
       const [searchPages, personaPages] = await Promise.all([
         Promise.all(batch.map((t) => this.fetchSearch(t, this.PER_QUERY_LIMIT))),
         Promise.all(batch.map((t) => this.fetchPersonas(t, this.PER_QUERY_LIMIT))),
       ]);
+
       for (const rows of searchPages) {
-        for (const r of rows) seen.set(this.rowId(r), this.rawStatus(r));
+        for (const r of rows) {
+          const status = this.rawStatus(r);
+          seen.set(this.rowId(r), status);
+          const nombre = (r.full_name ?? '').toString().trim();
+          if (!nombre) continue;
+          const e = r.extra ?? {};
+          const ubic =
+            (e.parroquia || e.municipio || e.hospital_name || r.text || '').toString().trim() ||
+            'Ubicación no indicada';
+          personas.set(`s:${this.rowId(r)}`, {
+            nombre,
+            estado: this.estadoKind(status),
+            lat: null,
+            lng: null,
+            ubicacion: ubic,
+          });
+        }
       }
+
       for (const rows of personaPages) {
         for (const r of rows) {
-          const id = `personas:${(r.doc_id ?? '').toString().trim() || (r.full_name ?? '')}`;
-          seen.set(id, (r.estado ?? '').toString());
+          const status = (r.estado ?? r.ciudad ?? '').toString();
+          const id = `p:${(r.doc_id ?? '').toString().trim() || (r.full_name ?? '')}`;
+          seen.set(id, status);
+          const nombre = (r.full_name ?? '').toString().trim();
+          if (!nombre) continue;
+          personas.set(id, {
+            nombre,
+            estado: this.estadoKind(status),
+            lat: typeof r.lat === 'number' ? r.lat : null,
+            lng: typeof r.lng === 'number' ? r.lng : null,
+            ubicacion: (r.zona ?? r.ciudad_zona ?? '').toString().trim() || 'Ubicación no indicada',
+          });
         }
       }
     }
@@ -155,7 +211,16 @@ export class AyudaSearchService {
       if (k === 'desaparecido') desaparecidos++;
       else if (k === 'encontrado') localizados++;
     }
-    return { total_reportados: seen.size, desaparecidos, localizados };
+    return {
+      metrics: { total_reportados: seen.size, desaparecidos, localizados },
+      personas: Array.from(personas.values()),
+    };
+  }
+
+  /** statusKind → estado del mapa ('otro' se trata como desconocido). */
+  private estadoKind(status: string): MapaPersona['estado'] {
+    const k = this.statusKind(status);
+    return k === 'otro' ? 'desconocido' : k;
   }
 
   // ==========================================================================
@@ -268,9 +333,10 @@ export class AyudaSearchService {
     const nombre = (r.full_name ?? '').toString().trim();
     if (!nombre) return null;
 
-    const ubicacion = (r.ciudad_zona ?? '').toString().trim() || 'Ubicación no indicada';
+    const ubicacion =
+      (r.zona ?? r.ciudad_zona ?? '').toString().trim() || 'Ubicación no indicada';
     const detalle =
-      [r.estado, r.descripcion]
+      [r.estado ?? r.ciudad, r.descripcion]
         .map((v) => (v ?? '').toString().trim())
         .filter(Boolean)
         .join(' · ') || null;
@@ -331,8 +397,13 @@ interface AyudaPersonaRow {
   cedula?: string;
   edad?: number | string;
   genero?: string;
+  // El esquema cambió en origen: el estado venía en `estado` y la ubicación en
+  // `ciudad_zona`; ahora llegan en `ciudad` (estado) y `zona` (ubicación).
+  // Leemos ambos por compatibilidad.
   estado?: string; // BUSCADO | SANO_SALVO | INFO_RECIBIDA | …
+  ciudad?: string;
   ciudad_zona?: string;
+  zona?: string;
   descripcion?: string;
   foto_url?: string;
   source?: string; // "Venezuela Reporta" | "hospitalesenvenezuela.com" | "Desaparecidos Venezuela"
@@ -340,4 +411,13 @@ interface AyudaPersonaRow {
   image_urls?: string[];
   lat?: number;
   lng?: number;
+}
+
+/** Persona simplificada para pintar en el mapa (con estado clasificado). */
+export interface MapaPersona {
+  nombre: string;
+  estado: 'desaparecido' | 'encontrado' | 'desconocido';
+  lat: number | null;
+  lng: number | null;
+  ubicacion: string;
 }

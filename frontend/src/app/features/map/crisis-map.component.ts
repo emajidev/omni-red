@@ -6,7 +6,7 @@ import { CrisisDataService } from '../../core/services/crisis-data.service';
 import { UiService } from '../../core/services/ui.service';
 import { HIGHLIGHT_ZONES } from '../../core/data/map-zones';
 import { VENEZUELA_OUTLINE } from '../../core/data/ve-outline';
-import { CenterType, CollapsedBuilding, PersonReport, Quake, ReliefCenter } from '../../core/models/models';
+import { CenterType, CollapsedBuilding, ExternalMapPerson, PersonReport, Quake, ReliefCenter } from '../../core/models/models';
 import {
   BUILDING_STATUS_LABEL, CRISIS_SINCE, DAMAGE_LABEL, SOURCE_LABEL, STATUS_LABEL,
   buildingStatusColor, damageColor
@@ -75,8 +75,9 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       const people = this.data.people();
       const centers = this.data.centers();
       const buildings = this.data.edificios();
+      const externos = this.data.externalMapa();
       this.ui.layers(); // dependencia: re-render al conmutar capas
-      if (this.map) this.renderMarkers(people, centers, buildings);
+      if (this.map) this.renderMarkers(people, centers, buildings, externos);
     });
 
     // Sismos en su PROPIA capa/efecto: así la línea de tiempo (cursor) re-pinta
@@ -215,7 +216,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       );
     });
 
-    this.renderMarkers(this.data.people(), this.data.centers(), this.data.edificios());
+    this.renderMarkers(this.data.people(), this.data.centers(), this.data.edificios(), this.data.externalMapa());
     this.renderQuakes(this.data.quakes());
 
     // Force Leaflet to recalculate map container size after DOM insertion
@@ -321,7 +322,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   // --- Markers (personas / centros / edificios) -----------------------------
   private renderMarkers(
     people: PersonReport[], centers: ReliefCenter[],
-    buildings: CollapsedBuilding[] = []
+    buildings: CollapsedBuilding[] = [], externos: ExternalMapPerson[] = []
   ): void {
     this.peopleLayer.clearLayers();
     this.centersLayer.clearLayers();
@@ -343,6 +344,20 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         }).bindPopup(this.personPopup(p), { maxWidth: 280 });
         marker.addTo(this.peopleLayer);
         this.markersById.set(p.id, marker);
+      }
+
+      // Personas del AGREGADOR externo (geocodificadas): el mapa refleja la
+      // escala real, no solo la BD local. Van al MISMO cluster (sin latido,
+      // para no recargar el repintado con miles de marcadores).
+      for (const e of externos) {
+        if (e.lat == null || e.lng == null) continue;
+        const cls = e.estado === 'desaparecido'
+          ? 'omni-pin omni-pin--alert'
+          : e.estado === 'encontrado' ? 'omni-pin omni-pin--safe' : 'omni-pin';
+        L.marker([e.lat, e.lng], {
+          omniStatus: e.estado,
+          icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
+        }).bindPopup(this.externalMapPopup(e), { maxWidth: 260 }).addTo(this.peopleLayer);
       }
     }
 
@@ -465,6 +480,22 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         <div class="row">Reporte: <b>${this.fmt(p.created_at)}</b></div>
         <div class="row">Fuente: <b>${SOURCE_LABEL[p.fuente]}</b></div>
         ${p.veces_reportado > 1 ? `<div class="flag">⚑ Confirmado por ${p.veces_reportado} fuentes</div>` : ''}
+      </div>`;
+  }
+
+  /** Popup de una persona del agregador externo (datos mínimos). */
+  private externalMapPopup(e: ExternalMapPerson): string {
+    const dot = e.estado === 'encontrado' ? 'var(--c-safe)' : e.estado === 'desaparecido' ? 'var(--c-alert)' : '#94a3b8';
+    const estadoLbl = e.estado === 'desaparecido' ? 'Desaparecido' : e.estado === 'encontrado' ? 'Encontrado' : 'Sin confirmar';
+    return `
+      <div class="omni-pop">
+        <div class="head">
+          <span class="sdot" style="background:${dot}"></span>
+          <strong>${this.esc(e.nombre)}</strong>
+        </div>
+        <div class="row">Estado: <b>${estadoLbl}</b></div>
+        <div class="row">Ubicación: <b>${this.esc(e.ubicacion)}</b></div>
+        <div class="row">Fuente: <b>Agregador externo</b></div>
       </div>`;
   }
 

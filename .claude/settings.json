@@ -235,7 +235,11 @@
       "Bash(grep -nA8 '\"assets\"' angular.json)",
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\" 2>/dev/null; echo \"=== refs a loadMetricsOnly \\(debe ser 0\\) ===\"; grep -rn 'loadMetricsOnly' app 2>/dev/null || echo \"  \\(ninguna\\)\"; echo \"=== refs a conn / lite ===\"; grep -rnE 'conn\\\\.\\(lite|setMode|detectedSlow\\)|loadLite' app | wc -l)",
       "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\" 2>/dev/null; echo \"=== styles.css leaflet/omni rules ===\"; grep -nE 'leaflet|omni-quake|omni-pop|zoom' src/styles.css | head -40; echo \"=== styles.css size ===\"; wc -l src/styles.css)",
-      "WebFetch(domain:centro-acopio-one.vercel.app)"
+      "WebFetch(domain:centro-acopio-one.vercel.app)",
+      "Bash(cd \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\home\\\\\\\\ema\\\\\\\\personal-repos\\\\\\\\omni-red\\\\\\\\frontend\\\\\\\\src\\\\\\\\app\" 2>/dev/null; echo \"=== places.ts \\(primeras líneas + forma\\) ===\"; head -40 core/data/places.ts; echo \"...\"; echo \"total líneas: $\\(wc -l < core/data/places.ts\\)\"; echo; echo \"=== lat/lng en report-sheet ===\"; grep -nE 'lat|lng|coord|jitter|place|geocod' features/report/report-sheet.component.ts | head -30)",
+      "Bash(curl -s https://omni-red-api-production.up.railway.app/api/personas?size=40 -A Mozilla/5.0 --max-time 40)",
+      "Bash(curl -s https://omni-red-api-production.up.railway.app/api/centros -A Mozilla/5.0 --max-time 40)",
+      "Bash(curl -s 'https://ayuda-api-551342186435.us-central1.run.app/api/search?q=maria&limit=2' -A Mozilla/5.0 --max-time 40)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -98,6 +98,17 @@ export class PersonasController {
     };
   }
 
+  /**
+   * GET /api/personas/external/mapa — personas del agregador externo para
+   * PINTAR EN EL MAPA (deduplicadas, con estado clasificado y, cuando existe,
+   * lat/lng). Las que no traen coordenadas las geocodifica el cliente por su
+   * ubicación. Cacheado en el backend.
+   */
+  @Get('external/mapa')
+  externalMapa() {
+    return this.ayuda.personasMapa();
+  }
+
   /** Deduplica personas externas por nombre+ubicación (normalizados). */
   private dedupePeople<T extends { nombre: string; ubicacion: string }>(
     rows: T[],

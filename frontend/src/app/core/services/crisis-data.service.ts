@@ -1,9 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiService, DuplicateFlag } from './api.service';
+import { correctPeopleCoords, geocodeExternalPersons } from '../util/geocode';
 import {
   BatchUploadResult, CenterCapacity, CollapsedBuilding, ReliefCenter, Metrics,
   NewBuildingRow, NewCenter, NewCenterRow, NewReport, PagedPersonas, PersonasQuery,
-  ExternalPerson, FvivemasMetrics, OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
+  ExternalPerson, ExternalMapPerson, FvivemasMetrics, OcrRecord, PersonReport, PersonStatus, ReportResult, Quake
 } from '../models/models';
 
 /**
@@ -33,6 +34,13 @@ export class CrisisDataService {
 
   /** Contador acumulado de visitas (se llena con {@link trackVisita}). */
   readonly visitas = signal<number>(0);
+
+  /**
+   * Personas del AGREGADOR externo, geocodificadas, para pintar en el mapa
+   * (además de las locales). Es lo que hace que el mapa refleje la escala real
+   * de reportes y no solo la BD local. Se carga en {@link loadAll}.
+   */
+  readonly externalMapa = signal<ExternalMapPerson[]>([]);
 
   /**
    * Resultados del registro médico EXTERNO de fvivemas para el término de
@@ -87,7 +95,7 @@ export class CrisisDataService {
   async loadAll(): Promise<void> {
     this.loading.set(true);
     try {
-      const [people, centers, quakes, edificios, extMetrics] = await Promise.all([
+      const [people, centers, quakes, edificios, extMetrics, extMapa] = await Promise.all([
         this.api.getAllPersonas(),
         this.api.getCentros(),
         this.api.getSismos(),
@@ -95,12 +103,17 @@ export class CrisisDataService {
         this.api.getEdificios().catch(() => [] as CollapsedBuilding[]),
         // Totales de fvivemas para los pills; ante fallo deja las métricas locales.
         this.api.getExternalMetrics().catch(() => null),
+        // Personas del agregador para el mapa; ante fallo, lista vacía.
+        this.api.getExternalMapa().catch(() => [] as ExternalMapPerson[]),
       ]);
-      this.people.set(people);
       this.centers.set(centers);
+      // Corrige las coordenadas según la ubicación real (hospital/localidad):
+      // los reportes OCR venían amontonados en un punto por defecto.
+      this.people.set(correctPeopleCoords(people, centers));
       this.quakes.set(quakes);
       this.edificios.set(edificios);
       this.externalMetrics.set(extMetrics);
+      this.externalMapa.set(geocodeExternalPersons(extMapa));
     } finally {
       this.loading.set(false);
     }

@@ -101,12 +101,21 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
     // React to focus requests (tap on a result / metric).
     effect(() => {
       const f = this.ui.focus();
-      if (f && this.map) {
+      if (!f || !this.map) return;
+
+      const m = f.id ? (this.markersById.get(f.id) ?? this.quakeMarkersById.get(f.id)) : null;
+      // Si el marcador está dentro de un cluster, lo revelamos (sale del cluster)
+      // y abrimos su popup; si no, volamos a la coordenada y abrimos el popup.
+      const grp = m
+        ? [this.peopleLayer, this.centersLayer, this.buildingsLayer].find(
+            (g) => g && typeof g.zoomToShowLayer === 'function' && g.hasLayer?.(m),
+          )
+        : null;
+      if (grp) {
+        grp.zoomToShowLayer(m, () => m.openPopup());
+      } else {
         this.map.flyTo([f.lat, f.lng], f.zoom ?? 15, { duration: 0.8 });
-        if (f.id) {
-          const m = this.markersById.get(f.id) ?? this.quakeMarkersById.get(f.id);
-          if (m) setTimeout(() => m.openPopup(), 650);
-        }
+        if (m) setTimeout(() => m.openPopup(), 650);
       }
     });
   }
@@ -182,10 +191,32 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       }
     };
 
+    // Cluster para SITIOS (hospitales/refugios/acopios) y EDIFICIOS: icono
+    // neutro de vidrio, distinto al de personas. Cada categoría conserva su
+    // propio grupo (no se mezclan entre sí; cada uno se conmuta con su capa).
+    const siteClusterOptions = {
+      maxClusterRadius: 50,
+      disableClusteringAtZoom: 16,
+      spiderfyOnMaxZoom: true,
+      chunkedLoading: true,
+      removeOutsideVisibleBounds: true,
+      animate: false,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div class="flex items-center justify-center w-9 h-9 rounded-full backdrop-blur-md border-[0.5px] border-black/10 bg-white/90 text-gray-800 font-bold text-[13px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-transform hover:scale-110">${count}</div>`,
+          className: 'omni-cluster-icon',
+          iconSize: [36, 36],
+        });
+      },
+    };
+
     const LAny = L as any;
-    this.peopleLayer = LAny.markerClusterGroup ? LAny.markerClusterGroup(clusterOptions).addTo(this.map) : L.layerGroup().addTo(this.map);
-    this.centersLayer = L.layerGroup().addTo(this.map);
-    this.buildingsLayer = L.layerGroup().addTo(this.map);
+    const makeCluster = (opts: any) =>
+      (LAny.markerClusterGroup ? LAny.markerClusterGroup(opts) : L.layerGroup()).addTo(this.map);
+    this.peopleLayer = makeCluster(clusterOptions);
+    this.centersLayer = makeCluster(siteClusterOptions);
+    this.buildingsLayer = makeCluster(siteClusterOptions);
 
     // this.drawHighlightZones();
     this.frameVenezuela();

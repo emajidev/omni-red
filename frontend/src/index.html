@@ -62,7 +62,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#F2F2F7" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔴</text></svg>" />
+  <link rel="icon" type="image/svg+xml" href="assets/brand/isotipo.svg" />
   <meta name="description" content="SomosUnoVzla: centralización de reportes de personas, acopio y sismos." />
 
   <!--
@@ -103,26 +103,25 @@
       theme: {
         extend: {
           colors: {
-            // Apple Light Premium Theme Backgrounds
-            appbg: '#F2F2F7',
-            surface: 'rgba(255, 255, 255, 0.85)',
-            borderlight: 'rgba(0, 0, 0, 0.05)',
-            textmain: '#000000',
-            textmuted: '#8E8E93',
+            appbg: '#f5f2ed',
+            surface: '#ffffff',
+            borderlight: '#d4d0c8',
+            textmain: '#1a1a1a',
+            textmuted: '#8a8a8a',
+            accent: '#d6fd70',
             
-            // Apple Colors
-            alert:  '#FF3B30',
-            alertbg: 'rgba(255, 59, 48, 0.15)',
-            warn:   '#FF9500',
-            warnbg: 'rgba(255, 149, 0, 0.15)',
-            safe:   '#34C759',
-            safebg: 'rgba(52, 199, 89, 0.15)',
-            info:   '#007AFF',
-            infobg: 'rgba(0, 122, 255, 0.15)',
-            primary: '#000000'
+            alert:  '#ef4444',
+            alertbg: 'rgba(239, 68, 68, 0.15)',
+            warn:   '#f59e0b',
+            warnbg: 'rgba(245, 158, 11, 0.15)',
+            safe:   '#22c55e',
+            safebg: 'rgba(34, 197, 94, 0.15)',
+            info:   '#3b82f6',
+            infobg: 'rgba(59, 130, 246, 0.15)',
+            primary: '#1a1a1a'
           },
           fontFamily: {
-            sans: ['Poppins', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+            sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
           },
           boxShadow: {
             'card': '0 4px 24px rgba(0,0,0,0.04)',
@@ -131,7 +130,8 @@
           borderRadius: {
             'xl': '1rem',
             '2xl': '1.5rem',
-            '3xl': '2rem'
+            '3xl': '2rem',
+            'full': '999px'
           },
           keyframes: {
             'count-pop': { '0%': { transform: 'scale(.8)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
@@ -151,16 +151,39 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 </head>
-<body class="font-sans antialiased overflow-hidden">
-  <app-root>
-    <!-- Splash de respaldo (Angular muestra el suyo encima) -->
-    <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--txt);font-family:'Poppins',system-ui;">
-      <div style="text-align:center">
-        <div style="font-size:2.5rem;font-weight:800;letter-spacing:-.05em">SomosUnoVzla</div>
-      </div>
+  <app-root></app-root>
+
+  <style>
+    .loader { position: fixed; inset: 0; z-index: 9999; background: #f5f2ed; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .loader-bg { position: absolute; inset: 0; z-index: 0; }
+    .loader-bg-img { width: 100%; height: 100%; object-fit: cover; }
+    .loader-bg-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,26,26,0.1) 0%, rgba(26,26,26,0.85) 100%); }
+    .loader-inner { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+    .loader-brand-img { width: 220px; filter: brightness(0) invert(1); }
+    .loader-text { color: rgba(255,255,255,0.7); font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .loader-bar { width: 200px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .loader-bar-fill { width: 100%; height: 100%; background: #d6fd70; border-radius: 4px; animation: pulse-bar 1.5s infinite ease-in-out; transform-origin: left; }
+    @keyframes pulse-bar { 0% { transform: scaleX(0); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+  </style>
+  <!-- Splash de SomosUno -->
+  <div class="loader" id="loader">
+    <div class="loader-bg">
+        <img src="assets/images/cielo.jpeg" alt="Cielo Loader" class="loader-bg-img">
+        <div class="loader-bg-overlay"></div>
     </div>
-  </app-root>
+    <div class="loader-inner">
+        <div class="loader-logo">
+            <img src="assets/brand/logo-full.svg" alt="SomosUno Logo" class="loader-brand-img">
+        </div>
+        <span class="loader-text">Inicializando plataforma...</span>
+        <div class="loader-bar">
+            <div class="loader-bar-fill" id="loaderBar"></div>
+        </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -152,8 +152,8 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       maxBoundsViscosity: 1.0,
     });
 
-    // Botones de zoom en la esquina inferior derecha (margen de 50px vía CSS).
-    this.map.zoomControl.setPosition('bottomright');
+    // Botones de zoom en la esquina superior derecha (luego centrados verticalmente vía CSS).
+    this.map.zoomControl.setPosition('topright');
 
     // Basemap matches the active theme (light Voyager / dark Dark Matter).
     this.applyTiles(this.ui.theme());
@@ -178,28 +178,26 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         const count = cluster.getChildCount();
         let cls = 'bg-white/90 text-gray-800 border-black/10 shadow-[0_4px_12px_rgba(0,0,0,0.15)]';
 
-        // El desglose desaparecidos/encontrados recorre los marcadores hijos; en
-        // clusters grandes son miles de iteraciones por icono y en cada zoom
-        // (se atascaba en móvil). Solo lo calculamos en clusters pequeños.
-        if (count <= 200) {
-          const markers = cluster.getAllChildMarkers();
-          let missing = 0;
-          let safe = 0;
-          let isCenter = false;
-          for (const m of markers) {
-            if (m.options.omniType === 'center') isCenter = true;
-            if (m.options.omniStatus === 'desaparecido') missing++;
-            else if (m.options.omniStatus === 'encontrado') safe++;
-          }
-          if (!isCenter && (missing > 0 || safe > 0)) {
-            cls = missing >= safe
-              ? 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30 shadow-none'
-              : 'bg-[#22c55e]/20 text-[#22c55e] border-[#22c55e]/30 shadow-none';
-          }
+        // Calculamos la mayoría de tipo (desaparecidos vs encontrados)
+        const markers = cluster.getAllChildMarkers();
+        let missing = 0;
+        let safe = 0;
+        let isCenter = false;
+        
+        for (const m of markers) {
+          if (m.options.omniType === 'center') isCenter = true;
+          if (m.options.omniStatus === 'desaparecido') missing++;
+          else if (m.options.omniStatus === 'encontrado') safe++;
+        }
+        
+        if (!isCenter && (missing > 0 || safe > 0)) {
+          cls = missing >= safe
+            ? 'bg-red-500/80 text-white border-red-600/50 shadow-lg'
+            : 'bg-green-500/80 text-white border-green-600/50 shadow-lg';
         }
 
         return L.divIcon({
-          html: `<div class="flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border-[0.5px] font-bold text-[14px] transform transition-transform hover:scale-110 ${cls}">
+          html: `<div class="flex items-center justify-center w-10 h-10 rounded-full backdrop-blur-md border font-bold text-[14px] transform transition-transform hover:scale-110 ${cls}">
                    ${count}
                  </div>`,
           className: 'omni-cluster-icon',
@@ -391,19 +389,24 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
   }
 
   // --- Markers (personas / centros / edificios) -----------------------------
+  private lastPeopleRef: PersonReport[] = [];
+  private lastExternosRef: ExternalMapPerson[] = [];
+  private lastOtherIds: Set<string> = new Set();
+
   private renderMarkers(
     people: PersonReport[], centers: ReliefCenter[],
     buildings: CollapsedBuilding[] = [], externos: ExternalMapPerson[] = []
   ): void {
-    this.peopleLayer.clearLayers();
-    this.centersLayer.clearLayers();
-    this.buildingsLayer.clearLayers();
-    this.markersById.clear();
-
-    // Capas visibles (control de mostrar/ocultar categorías).
     const vis = this.ui.layers();
 
-    if (vis.personas) {
+    // 1. OPTIMIZACIÓN: Solo reconstruimos la capa de Personas (miles de pines) si los datos cambian.
+    // Esto hace que apagar/encender capas sea instantáneo.
+    if (this.lastPeopleRef !== people || this.lastExternosRef !== externos) {
+      this.peopleLayer.clearLayers();
+      
+      // Limpiar solo los IDs de personas antiguas del mapa de referencias
+      for (const p of this.lastPeopleRef) this.markersById.delete(p.id);
+
       for (const p of people) {
         const isMissing = p.estado === 'desaparecido';
         const cls = isMissing
@@ -417,9 +420,6 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         this.markersById.set(p.id, marker);
       }
 
-      // Personas del AGREGADOR externo (geocodificadas): el mapa refleja la
-      // escala real, no solo la BD local. Van al MISMO cluster (sin latido,
-      // para no recargar el repintado con miles de marcadores).
       for (const e of externos) {
         if (e.lat == null || e.lng == null) continue;
         const cls = e.estado === 'desaparecido'
@@ -430,7 +430,25 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
           icon: L.divIcon({ className: '', html: `<div class="${cls}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
         }).bindPopup(this.externalMapPopup(e), { maxWidth: 260 }).addTo(this.peopleLayer);
       }
+
+      this.lastPeopleRef = people;
+      this.lastExternosRef = externos;
     }
+
+    // Toggle de la capa completa de personas en el mapa
+    if (vis.personas) {
+      if (!this.map.hasLayer(this.peopleLayer)) this.map.addLayer(this.peopleLayer);
+    } else {
+      if (this.map.hasLayer(this.peopleLayer)) this.map.removeLayer(this.peopleLayer);
+    }
+
+    // 2. Centros y Edificios (pocos pines, reconstruir es instantáneo)
+    this.centersLayer.clearLayers();
+    this.buildingsLayer.clearLayers();
+    
+    // Limpiar IDs antiguos de centros y edificios
+    for (const id of this.lastOtherIds) this.markersById.delete(id);
+    this.lastOtherIds.clear();
 
     for (const c of centers) {
       // Cada tipo de sitio tiene su propia capa conmutable.
@@ -449,6 +467,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
       }).bindPopup(this.centerPopup(c), { maxWidth: 280 });
       marker.addTo(this.centersLayer);
       this.markersById.set(c.id, marker);
+      this.lastOtherIds.add(c.id);
     }
 
     // Edificios afectados (estructuras dañadas / colapsadas). Halo por nivel de
@@ -468,6 +487,7 @@ export class CrisisMapComponent implements AfterViewInit, OnDestroy {
         }).bindPopup(this.buildingPopup(b), { maxWidth: 280 });
         marker.addTo(this.buildingsLayer);
         this.markersById.set(b.id, marker);
+        this.lastOtherIds.add(b.id);
       }
     }
   }

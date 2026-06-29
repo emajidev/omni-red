@@ -64,9 +64,9 @@ export class ConnectionService {
   private readMode(): ConnMode {
     try {
       const v = localStorage.getItem(MODE_KEY);
-      if (v === 'lite' || v === 'full' || v === 'auto') return v;
+      if (v === 'lite' || v === 'full' || v === 'auto') return v as ConnMode;
     } catch { /* modo privado */ }
-    return 'auto';
+    return 'lite';
   }
 
   /** Heurística con la Network Information API. */

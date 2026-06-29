@@ -97,8 +97,8 @@ export class UiService {
 
   private readInitialLayers(): Record<MapLayer, boolean> {
     const def: Record<MapLayer, boolean> = {
-      personas: true, hospitales: true, refugios: true,
-      acopios: true, edificios: true, sismos: true,
+      personas: true, hospitales: false, refugios: false,
+      acopios: true, edificios: false, sismos: false,
     };
     try {
       const raw = localStorage.getItem(LAYERS_KEY);

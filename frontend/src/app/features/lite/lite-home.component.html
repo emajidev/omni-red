@@ -1,0 +1,249 @@
+<!-- ========== FLOATING CAPSULE NAVBAR ========== -->
+<div class="lite-container h-[100dvh] w-full overflow-y-auto overflow-x-hidden relative" style="background: var(--bg);">
+    <header class="navbar-wrapper" id="navbarWrapper">
+        <nav class="navbar" id="navbar">
+            <div class="nav-inner">
+                <a href="#" class="nav-logo">
+                    <img src="assets/brand/isotipo.svg" alt="SomosUno Isotipo" class="logo-icon" width="26" height="26">
+                    <span>SomosUno</span>
+                </a>
+                <ul class="nav-links" id="navLinks">
+                    <li><a (click)="ui.open('search')">Buscar Persona</a></li>
+                    <li><a (click)="ui.openReport('desaparecido')">Reportar Desaparecido</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button (click)="conn.setMode('full')" class="btn-cta" id="btnCtaNav"
+                        style="background: var(--c-warn) !important; border: none !important; color: #fff !important;">
+                        <span class="btn-cta-text">Ver Mapa</span>
+                        <span class="btn-cta-arrow"
+                            style="background: rgba(255,255,255,0.25) !important; color: #fff !important;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                                <polyline points="12 5 19 12 12 19" />
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- ========== HERO SECTION ========== -->
+    <section class="hero" id="inicio" style="min-height: 100dvh;">
+        <div class="hero-bg">
+            <img class="hero-bg-image" src="assets/images/cielo.webp" alt="Cielo de esperanza SomosUno" loading="eager">
+        </div>
+        <div class="hero-content hero-content--centered md:-translate-y-[7vh]">
+            <div class="hero-trust-badge" data-gsap="hero" style="margin-top: 78px !important;">
+                <span class="trust-stars">
+                    <span class="relative flex h-2 w-2">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                            style="background: var(--c-alert)"></span>
+                        <span class="relative inline-flex h-2 w-2 rounded-full"
+                            style="background: var(--c-alert)"></span>
+                    </span>
+                </span>
+                <span class="trust-text">Emergencia · Sismo del 24 de junio</span>
+            </div>
+
+            <h1 class="hero-title hero-title--centered" data-gsap="hero">
+                <span class="font-light">Reconectemos a</span><br>
+                <span class="font-bold">cada familia</span>
+            </h1>
+            <p class="hero-subtitle hero-subtitle--centered" data-gsap="hero">
+                Tras el terremoto, muchas familias siguen sin saber de los suyos. Busca a alguien en el padrón, márcalo
+                como localizado si lo reconoces, o repórtalo si no logras comunicarte.
+            </p>
+
+            @if (conn.detectedSlow()) {
+            <div data-gsap="hero"
+                class="mt-4 flex items-start gap-2 rounded-xl px-4 py-3 text-[13px] font-semibold mb-5"
+                style="background: rgba(0,0,0,0.5); color: #fff; max-width: 600px; margin-left: auto; margin-right: auto; backdrop-filter: blur(10px);">
+                <span>⚡</span>
+                <span>Detectamos una conexión lenta: activamos esta vista ligera (sin mapa) para que cargue más
+                    rápido.</span>
+            </div>
+            }
+
+            <div class="hero-cta-group" data-gsap="hero"
+                style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 52px !important;">
+                <button (click)="ui.open('search')" class="btn-cta btn-cta--hero btn-glass">
+                    <span class="btn-cta-text" style="color: #fff;">BUSCAR PERSONA</span>
+                    <span class="btn-cta-arrow" style="background: rgba(255,255,255,1); color: #1a1a1a;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                </button>
+
+                <button (click)="ui.openReport('desaparecido')" class="btn-cta btn-cta--hero btn-glass-red">
+                    <span class="btn-cta-text" style="color: #fff;">REPORTAR DESAPARECIDO</span>
+                    <span class="btn-cta-arrow" style="background: rgba(239, 68, 68, 1); color: #fff;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </span>
+                </button>
+
+                <button (click)="ui.openReport('encontrado')" class="btn-cta btn-cta--hero btn-glass-green">
+                    <span class="btn-cta-text" style="color: #fff;">MARCAR ENCONTRADO</span>
+                    <span class="btn-cta-arrow" style="background: rgba(34, 197, 94, 1); color: #fff;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Single Glassmorphism Container for Stats -->
+        <div class="hero-stats-glass-container" data-gsap="hero" style="margin-top: 2rem;">
+            <div class="hero-stat-item">
+                <div class="hero-stat-text">
+                    <span class="hero-stat-value" [appCountUp]="m().total_reportados"></span>
+                    <span class="hero-stat-label">Reportes totales</span>
+                </div>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+                <div class="hero-stat-text">
+                    <span class="hero-stat-value" [appCountUp]="m().desaparecidos"></span>
+                    <span class="hero-stat-label" style="color: var(--c-alert); font-weight: 600;">Desaparecidos</span>
+                </div>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+                <div class="hero-stat-text">
+                    <span class="hero-stat-value" [appCountUp]="m().localizados"></span>
+                    <span class="hero-stat-label" style="color: var(--c-safe); font-weight: 600;">Localizados</span>
+                </div>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat-item">
+                <div class="hero-stat-text">
+                    <span class="hero-stat-value" [appCountUp]="m().sismos_24h"></span>
+                    <span class="hero-stat-label">Sismos (24 h)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- ========== MODULES SECTION (Landing Page Style) ========== -->
+    <section class="modules-section relative z-10" style="background: var(--bg); padding: 120px 24px;">
+        <div
+            style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <div style="text-align: center; margin-bottom: 64px; max-width: 700px;">
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight" style="color: var(--txt);">Módulos de
+                    Respuesta</h2>
+                <p class="mt-4 text-base md:text-lg" style="color: var(--txt-muted);">Herramientas integradas para la
+                    gestión de crisis y recuperación.</p>
+            </div>
+
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, 320px); justify-content: center; gap: 24px; width: 100%;">
+                @for (s of secondary; track s.sheet) {
+                <div (click)="ui.open(s.sheet)"
+                    class="group cursor-pointer transition-all duration-500 hover:-translate-y-2"
+                    style="background: #ffffff; border: 1px solid var(--border); border-radius: 32px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);">
+                    <!-- Top Visual Half -->
+                    <div class="transition-colors duration-500 group-hover:bg-[#f1f5f9]"
+                        style="height: 180px; background: #f8f9fa; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: center; position: relative;">
+                        <span class="transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3"
+                            style="color: var(--txt); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.05));">
+                            @switch (s.sheet) {
+                            @case ('ocr') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            }
+                            @case ('sismos') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                            </svg>
+                            }
+                            @case ('hospitales') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 21h18"></path>
+                                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                                <path d="M9 10h6"></path>
+                                <path d="M12 7v6"></path>
+                            </svg>
+                            }
+                            @case ('refugios') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                            }
+                            @case ('centers') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                                </path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                            </svg>
+                            }
+                            @case ('edificios') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                <path d="M9 22v-4h6v4"></path>
+                                <path d="M8 6h.01"></path>
+                                <path d="M16 6h.01"></path>
+                                <path d="M12 6h.01"></path>
+                                <path d="M12 10h.01"></path>
+                                <path d="M12 14h.01"></path>
+                                <path d="M16 10h.01"></path>
+                                <path d="M16 14h.01"></path>
+                                <path d="M8 10h.01"></path>
+                                <path d="M8 14h.01"></path>
+                            </svg>
+                            }
+                            @case ('report-building') {
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                                </path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                            }
+                            }
+                        </span>
+                    </div>
+                    <!-- Bottom Content Half -->
+                    <div
+                        style="padding: 28px 24px; text-align: center; display: flex; flex-direction: column; flex-grow: 1;">
+                        <h3
+                            style="font-weight: 700; font-size: 1.35rem; color: var(--txt); margin-bottom: 10px; letter-spacing: -0.02em;">
+                            {{ s.label }}</h3>
+                        <p
+                            style="font-size: 0.95rem; color: var(--txt-muted); line-height: 1.6; margin-bottom: 20px; flex-grow: 1;">
+                            {{ s.desc }}</p>
+                        <div class="transition-colors duration-300 group-hover:text-blue-600"
+                            style="color: var(--c-info); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                            ABRIR MÓDULO <span
+                                class="transition-transform duration-300 group-hover:translate-x-1">&rarr;</span>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </section>
+</div>

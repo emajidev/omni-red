@@ -21,9 +21,9 @@ import { CRISIS_SINCE } from '../../core/util/labels';
 
       <!-- Cabecera: estado + cierre -->
       <div class="mb-1.5 flex items-center gap-2">
-        <span class="grid h-5 w-5 place-items-center rounded-full" style="background: var(--c-warn); color:#fff">
+        <span class="grid h-5 w-5 place-items-center rounded-full" style="background: #3b82f6; color:#fff; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
           <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 8v4l2.5 2.5" />
+             <circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 8v4l2.5 2.5" />
           </svg>
         </span>
         <div class="min-w-0 flex-1 leading-tight">
@@ -45,8 +45,8 @@ import { CRISIS_SINCE } from '../../core/util/labels';
       <!-- Controles: play + barra con marcas -->
       <div class="flex items-center gap-2.5">
         <button (click)="togglePlay()" [attr.aria-label]="playing() ? 'Pausar' : 'Reproducir'"
-                class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white transition active:scale-90"
-                style="background: var(--c-warn)">
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white transition hover:scale-105 active:scale-90"
+                style="background: rgba(59, 130, 246, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
           @if (playing()) {
             <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
           } @else {
@@ -81,7 +81,7 @@ import { CRISIS_SINCE } from '../../core/util/labels';
     .timeline-range {
       -webkit-appearance: none;
       appearance: none;
-      height: 6px;
+      height: 4px;
       border-radius: 9999px;
       background: var(--chip-bg);
       outline: none;
@@ -89,22 +89,33 @@ import { CRISIS_SINCE } from '../../core/util/labels';
     .timeline-range::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 9999px;
-      background: var(--c-warn);
-      border: 3px solid #fff;
-      box-shadow: 0 1px 4px rgba(0,0,0,.35);
+      background: rgba(59, 130, 246, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
       cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .timeline-range::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
     }
     .timeline-range::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      border: 3px solid #fff;
+      width: 20px;
+      height: 20px;
       border-radius: 9999px;
-      background: var(--c-warn);
-      box-shadow: 0 1px 4px rgba(0,0,0,.35);
+      background: rgba(59, 130, 246, 0.7);
+      backdrop-filter: blur(4px);
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
       cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .timeline-range::-moz-range-thumb:hover {
+      transform: scale(1.15);
     }
   `]
 })
@@ -183,6 +194,7 @@ export class TimelineBarComponent implements OnDestroy {
   onScrub(value: string): void {
     this.stop(); // mover a mano cancela la reproducción
     this.ui.timelineAt.set(Number(value));
+    this.isolateSismosLayer();
   }
 
   togglePlay(): void {
@@ -195,6 +207,7 @@ export class TimelineBarComponent implements OnDestroy {
     const span = max - from;
     if (span <= 0) return;
 
+    this.isolateSismosLayer();
     this.playing.set(true);
     const t0 = performance.now();
     const DURATION = 12_000; // recorre toda la crisis en ~12s
@@ -212,6 +225,18 @@ export class TimelineBarComponent implements OnDestroy {
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);
+  }
+
+  private isolateSismosLayer(): void {
+    if (!this.ui.layers().sismos || this.ui.layers().personas) {
+      this.ui.setAllLayers(false);
+      // Ensure sismos is turned on since setAllLayers(false) turns it off
+      setTimeout(() => {
+        if (!this.ui.layers().sismos) {
+          this.ui.toggleLayer('sismos');
+        }
+      }, 0);
+    }
   }
 
   private stop(): void {

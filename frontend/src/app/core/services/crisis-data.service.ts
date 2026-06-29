@@ -96,9 +96,9 @@ export class CrisisDataService {
     this.loading.set(true);
     try {
       const [people, centers, quakes, edificios, extMetrics, extMapa] = await Promise.all([
-        this.api.getAllPersonas(),
-        this.api.getCentros(),
-        this.api.getSismos(),
+        this.api.getAllPersonas().catch(() => [] as PersonReport[]),
+        this.api.getCentros().catch(() => [] as ReliefCenter[]),
+        this.api.getSismos().catch(() => [] as Quake[]),
         // Resiliente: si el endpoint aún no está desplegado, no rompe la carga.
         this.api.getEdificios().catch(() => [] as CollapsedBuilding[]),
         // Totales de fvivemas para los pills; ante fallo deja las métricas locales.

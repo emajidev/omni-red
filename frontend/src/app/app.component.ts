@@ -38,18 +38,7 @@ declare var gsap: any;
     LiteHomeComponent
   ],
   template: `
-    <!-- 3 Second Splash Screen -->
-    @if (showSplash()) {
-      <div class="fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity duration-1000"
-           style="background: var(--bg); color: var(--txt);" [class.opacity-0]="fadeSplash()">
-        <h1 class="text-[2.5rem] font-extrabold tracking-tight mb-6">SomosUnoVzla</h1>
-
-        <!-- Loading Progress Bar -->
-        <div class="w-48 h-1.5 rounded-full overflow-hidden" style="background: var(--chip-bg);">
-          <div class="h-full rounded-full" style="background: var(--c-alert); animation: fill-bar 2s linear forwards;"></div>
-        </div>
-      </div>
-    }
+    <!-- El splash screen ha sido movido a index.html para un inicio más limpio. -->
 
     <!-- ===== Modal de bienvenida / aviso (se muestra al cargar, hasta aceptar) ===== -->
     @if (showIntro()) {
@@ -60,28 +49,33 @@ declare var gsap: any;
              style="background: var(--sheet); color: var(--txt); border: 1px solid var(--glass-border);">
 
           <!-- Marca -->
-          <div class="mb-4 flex items-center gap-2">
-            <span id="intro-title" class="text-xl font-black tracking-tight">SomosUnoVzla</span>
-            <svg class="h-[18px] w-[27px] rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
-              <rect width="90" height="20" fill="#FCE300"/>
-              <rect y="20" width="90" height="20" fill="#0038A8"/>
-              <rect y="40" width="90" height="20" fill="#CE1126"/>
-            </svg>
+          <div class="mb-5 flex items-center justify-center">
+            <img src="assets/brand/logo-full.svg" alt="SomosUno Logo" class="h-9 dark:invert">
           </div>
 
           <div class="space-y-3 text-[13px] leading-relaxed">
-            <p><b>SomosUnoVzla</b> es una plataforma de respuesta ciudadana ante la actual crisis del terremoto en Venezuela. Su objetivo es centralizar y automatizar la búsqueda de personas para que localizar a alguien sea mucho más rápido y sencillo.</p>
-            <p>Es una iniciativa desarrollada por <b>estudiantes de Ingeniería en Inteligencia Artificial</b>. Para construirla aplicamos técnicas de <b>web scraping</b>, recopilación y consolidación de información, <b>redes neuronales convolucionales (CNN)</b> y algoritmos de <b>vecinos más cercanos (k-NN)</b> para relacionar datos y encontrar coincidencias.</p>
-            <p>Los datos pasan por procesos de <b>ETL</b> (extracción, transformación y carga): <b>extraemos</b> de fuentes públicas, APIs y archivos (CSV y OCR de listas); <b>transformamos</b> con normalización de texto (minúsculas y sin acentos), consolidación y <b>desduplicación</b> por huella (cédula/nombre); y <b>cargamos</b> en la base por lotes.</p>
-            <p>El buscador combina varios <b>algoritmos de búsqueda</b>: coincidencia exacta, por prefijo y por subcadena con <b>puntuación ponderada</b>; <b>búsqueda difusa por trigramas</b> (similitud por coeficiente de Sørensen-Dice); y <b>distancia de edición de Levenshtein</b>, para tolerar acentos y errores de tipeo.</p>
-            <p style="color: var(--txt-muted);">Toda la información mostrada es de <b>dominio público</b> y ha sido recopilada de diversas fuentes abiertas.</p>
+            <p><b>SomosUnoVzla</b> es una plataforma de respuesta ciudadana ante la crisis del sismo. Centralizamos la búsqueda de personas para que localizar a alguien sea rápido y sencillo.</p>
+            
+            <details class="group cursor-pointer rounded-lg bg-black/5 p-3 dark:bg-white/5 transition-all">
+              <summary class="font-bold text-[12px] uppercase tracking-wide text-[var(--c-info)] outline-none list-none flex items-center justify-between">
+                <span>Ver detalles técnicos</span>
+                <span class="text-lg transition-transform group-open:rotate-180">▾</span>
+              </summary>
+              <div class="mt-3 space-y-3 text-[12px] opacity-90">
+                <p>Es una iniciativa desarrollada por <b>estudiantes de Inteligencia Artificial</b>. Aplicamos técnicas de <b>web scraping</b>, <b>redes neuronales convolucionales (CNN)</b> y algoritmos de <b>vecinos más cercanos (k-NN)</b>.</p>
+                <p>Procesos <b>ETL</b>: <b>extraemos</b> de fuentes públicas (CSV y OCR); <b>transformamos</b> (minúsculas, sin acentos), y <b>desduplicamos</b> por huella; luego <b>cargamos</b> por lotes.</p>
+                <p>Buscador: coincidencia exacta, prefijo, subcadena; <b>búsqueda difusa por trigramas</b> y <b>distancia de Levenshtein</b> para tolerar errores de tipeo.</p>
+              </div>
+            </details>
+            
+            <p style="color: var(--txt-muted); font-size: 11px;">Toda la información es de <b>dominio público</b>, recopilada de fuentes abiertas.</p>
           </div>
 
           <!-- Aviso de responsabilidad -->
           <div class="mt-4 rounded-xl p-3 text-[12px] leading-relaxed"
                style="background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.30);">
             <b style="color: var(--c-alert);">Aviso de responsabilidad.</b>
-            SomosUnoVzla es una herramienta informativa de apoyo. No nos hacemos responsables de la exactitud, vigencia o uso que se dé a la información aquí presentada, ni de las decisiones tomadas con base en ella. Ante una emergencia, contacta siempre a los organismos oficiales de protección civil y rescate.
+            Esta es una herramienta de apoyo informativo. Ante una emergencia, contacta <b>siempre</b> a los organismos oficiales de protección civil y rescate.
           </div>
 
           <button (click)="acceptIntro()"
@@ -101,260 +95,159 @@ declare var gsap: any;
       } @else {
       <app-crisis-map></app-crisis-map>
 
-      <!-- ===== Ticker sísmico (franja superior, ≤30px) ===== -->
-      <div class="seismic-ticker bg-black/90 text-white/90 border-b border-white/10 backdrop-blur-md" aria-label="Estado sísmico">
-        <span class="seismic-state" [style.color]="quakeAlert().color">
-          <span class="sdot" [style.background]="quakeAlert().color"></span>
-          {{ quakeAlert().label }}
-        </span>
-        <span class="seismic-sep"></span>
-        <span class="seismic-replicas">{{ quakeAlert().replicas }} réplicas/24h</span>
-        <span class="seismic-sep"></span>
-        <div class="seismic-marquee">
-          <div class="seismic-track">
-            <span>{{ quakeTicker() }}</span>
-            <span>{{ quakeTicker() }}</span>
+
+
+      <!-- ===== WIDGETS FLOTANTES SUPERIORES (Z-500) ===== -->
+      <div class="pointer-events-none absolute inset-x-0 top-[max(1.5rem,env(safe-area-inset-top))] md:top-[4%] z-[500] px-4">
+        
+        <!-- WIDGET TOP-LEFT (Logo) -->
+        <div class="hidden md:flex absolute left-4 top-0 pointer-events-auto items-center gap-2 rounded-[100px] px-4 shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md h-12 border border-black/5 dark:border-white/5">
+          <img src="assets/brand/isotipo.svg" alt="SomosUno" class="h-6 w-6 dark:invert">
+          <span class="font-black text-lg tracking-tight hidden md:block" style="color: var(--txt);">SomosUno</span>
+        </div>
+
+        <!-- WIDGET TOP-CENTER (Buscador, Reportar/Encontrado, Filtros Múltiples) -->
+        <div class="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-auto flex flex-col gap-2 w-full px-4 max-w-[95%] sm:max-w-[90%] md:max-w-[500px]">
+          <!-- Búsqueda -->
+          <div class="relative w-full rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md border border-black/5 dark:border-white/5 overflow-hidden transition hover:shadow-xl">
+             <div class="flex items-center px-4 py-2.5 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition" (click)="ui.open('search')">
+                <svg class="w-4 h-4 opacity-50 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <span class="text-[13px] font-semibold opacity-70">Buscar por nombre, apellido o cédula</span>
+             </div>
           </div>
+          
+          <!-- Botones Reportar / Encontrados -->
+          <div class="flex gap-2 w-full">
+             <button (click)="ui.openReport('desaparecido')" class="flex-1 flex justify-center items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md shadow-lg rounded-[100px] py-2 text-[12px] font-bold border border-black/5 dark:border-white/5 transition hover:bg-black/5 active:scale-95 text-[#ef4444]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Reportar
+             </button>
+             <button (click)="ui.openReport('encontrado')" class="flex-1 flex justify-center items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md shadow-lg rounded-[100px] py-2 text-[12px] font-bold border border-black/5 dark:border-white/5 transition hover:bg-black/5 active:scale-95 text-[#22c55e]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                Encontrados
+             </button>
+          </div>
+
+          <!-- Filtros de Capas (Múltiple) -->
+          <div class="flex flex-wrap gap-2 justify-center mt-0.5">
+             <!-- Todos -->
+             <button (click)="ui.setAllLayers(true)" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1"
+                     [style.background]="allLayersOn() ? 'var(--txt)' : 'var(--bg)'"
+                     [style.color]="allLayersOn() ? 'var(--bg)' : 'var(--txt)'"
+                     style="border: 1px solid var(--border);">
+               Todos
+             </button>
+             <!-- Personas -->
+             <button (click)="ui.toggleLayer('personas')" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 border border-black/5 dark:border-white/5" [style.opacity]="ui.layers()['personas'] ? '1' : '0.45'" style="color: var(--txt);">
+               <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 bg-[#ef4444]"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-[#ef4444]"></span></span> Personas
+             </button>
+             <!-- Hospitales -->
+             <button (click)="ui.toggleLayer('hospitales')" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 border border-black/5 dark:border-white/5" [style.opacity]="ui.layers()['hospitales'] ? '1' : '0.45'" style="color: var(--txt);">
+               🏥 Hospitales
+             </button>
+             <!-- Refugios -->
+             <button (click)="ui.toggleLayer('refugios')" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 border border-black/5 dark:border-white/5" [style.opacity]="ui.layers()['refugios'] ? '1' : '0.45'" style="color: var(--txt);">
+               🏠 Refugios
+             </button>
+             <!-- Acopio -->
+             <button (click)="ui.toggleLayer('acopios')" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 border border-black/5 dark:border-white/5" [style.opacity]="ui.layers()['acopios'] ? '1' : '0.45'" style="color: var(--txt);">
+               📦 Acopio
+             </button>
+             <!-- Edificios -->
+             <button (click)="ui.toggleLayer('edificios')" class="px-3 py-1.5 rounded-[100px] text-[11px] font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 bg-white/95 dark:bg-[#2a2a2a]/95 border border-black/5 dark:border-white/5" [style.opacity]="ui.layers()['edificios'] ? '1' : '0.45'" style="color: var(--txt);">
+               🏚️ Edificios
+             </button>
+          </div>
+        </div>
+
+        <!-- WIDGET TOP-RIGHT (Acciones + Tema + Lite) -->
+        <div class="fixed md:absolute right-3 md:right-4 top-1/2 md:top-0 -translate-y-1/2 md:translate-y-0 pointer-events-auto flex flex-col md:flex-row items-end md:items-start gap-2 z-[600] md:z-auto">
+           <!-- Cargar Lista (OCR) -->
+           <button (click)="ui.open('ocr')" title="Cargar Lista CSV/OCR" class="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--txt)">
+             <svg class="h-[20px] w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" /></svg>
+           </button>
+           
+           <!-- Refugios -->
+           <button (click)="ui.open('refugios')" title="Refugios" class="hidden lg:grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--txt)">
+             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
+           </button>
+           
+           <!-- Hospitales -->
+           <button (click)="ui.open('hospitales')" title="Hospitales" class="hidden lg:grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--txt)">
+             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
+           </button>
+           
+           <!-- Edificios -->
+           <button (click)="ui.open('edificios')" title="Edificios" class="hidden lg:grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--c-warn)">
+             <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
+           </button>
+
+           <!-- Theme -->
+           <button (click)="ui.toggleTheme()" title="Cambiar Tema" class="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--txt)">
+              @if (ui.theme() === 'dark') {
+                <svg class="h-[20px] w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+              } @else {
+                <svg class="h-[20px] w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              }
+           </button>
+           
+           <!-- Lite -->
+           <button (click)="conn.toggle()" class="rounded-[100px] h-10 sm:h-12 px-3 sm:px-5 text-[11px] sm:text-[13px] font-bold text-white shadow-lg transition hover:brightness-110 active:scale-95 flex items-center border border-black/5 dark:border-white/5" [style.background]="conn.lite() ? 'var(--c-safe)' : 'var(--c-warn)'">
+              {{ conn.lite() ? 'VER MAPA' : 'LITE' }}
+           </button>
         </div>
       </div>
 
-      <!-- ===== Overlay superior: cabecera (lite · marca · tema · capas) + panel de capas ===== -->
-      <div class="pointer-events-none absolute inset-x-0 top-7 z-[500] flex flex-col items-center gap-2 px-3 pt-[max(.75rem,env(safe-area-inset-top))]">
-
-        <div class="pointer-events-auto w-full max-w-[460px] sm:max-w-[600px] flex flex-col gap-2 rounded-2xl glass-bar p-3 animate-stagger-1 gs-header">
-
-          <!-- Fila 1: versión lite · marca · tema + capas -->
-          <div class="flex items-center justify-between gap-2">
-            <button (click)="conn.setMode('lite')" aria-label="Cambiar a versión lite (sin mapa)"
-                    class="lite-cta shrink-0 rounded-full py-1.5 px-4 text-[13px] font-extrabold uppercase tracking-wider text-white transition active:scale-95">
-              LITE
-            </button>
-
-            <div class="flex min-w-0 flex-1 items-center justify-center gap-2">
-              <span class="truncate text-lg sm:text-2xl font-black tracking-tight">SomosUnoVzla</span>
-              <svg class="h-[20px] w-[28px] shrink-0 rounded-sm shadow-sm opacity-90" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
-                <rect width="90" height="20" fill="#FCE300"/>
-                <rect y="20" width="90" height="20" fill="#0038A8"/>
-                <rect y="40" width="90" height="20" fill="#CE1126"/>
-              </svg>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-1.5">
-              <button (click)="ui.toggleTheme()" aria-label="Cambiar tema"
-                      class="grid h-9 w-9 place-items-center rounded-full transition active:scale-90" style="background: var(--chip-bg); color: var(--txt)">
-                @if (ui.theme() === 'dark') {
-                  <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
-                } @else {
-                  <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                }
-              </button>
-              <button (click)="showLayers.set(!showLayers())" aria-label="Mostrar/ocultar capas del mapa"
-                      class="grid h-9 w-9 place-items-center rounded-full transition active:scale-90"
-                      [style.background]="showLayers() ? 'var(--c-info)' : 'var(--chip-bg)'"
-                      [style.color]="showLayers() ? '#fff' : 'var(--txt)'">
-                <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4l9 5-9 5-9-5 9-5z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 14l9 5 9-5"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Live metrics — semantic pills (20% bg opacity, solid text) -->
-          <div class="flex flex-nowrap justify-center gap-2">
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 border-[0.5px] rounded-full" style="background: var(--chip-bg); color: var(--txt-muted); border-color: var(--divider);">
-              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
-              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().total_reportados"></span>
-              <span class="lbl font-light uppercase tracking-wider text-[10px]">total</span>
-            </span>
-            <span class="flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#ef4444]/20 text-[#ef4444] border-[0.5px] border-[#ef4444]/30 rounded-full">
-              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
-              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().desaparecidos"></span>
-              <span class="lbl font-light uppercase tracking-wider text-[10px]">desap.</span>
-            </span>
-            <span class="flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#22c55e]/20 text-[#22c55e] border-[0.5px] border-[#22c55e]/30 rounded-full">
-              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
-              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().localizados"></span>
-              <span class="lbl font-light uppercase tracking-wider text-[10px]">Encontrados</span>
-            </span>
-            <span class="hidden sm:flex items-center gap-1.5 px-3 py-1 whitespace-nowrap shrink-0 bg-[#3b82f6]/20 text-[#3b82f6] border-[0.5px] border-[#3b82f6]/30 rounded-full">
-              <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span></span>
-              <span class="val text-[13px] font-semibold" [appCountUp]="data.metrics().centros_activos"></span>
-              <span class="lbl font-light uppercase tracking-wider text-[10px]">acopio</span>
-            </span>
-          </div>
-
-        </div>
-
-        <!-- Panel de capas (se muestra/oculta con el botón de la cabecera), bajo ella -->
-        @if (showLayers()) {
-          <div class="pointer-events-auto self-end w-auto sm:w-52 rounded-2xl glass-bar p-2 fade-in">
-            <div class="mb-1 hidden sm:flex items-center justify-between px-2 py-1">
-              <span class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--txt-muted)">Capas</span>
-              <button (click)="ui.setAllLayers(!allLayersOn())"
-                      class="rounded-full px-2.5 py-0.5 text-[11px] font-bold transition active:scale-95"
-                      style="background: var(--chip-bg); color: var(--txt)">
-                {{ allLayersOn() ? 'Ocultar todo' : 'Ver todo' }}
-              </button>
-            </div>
-            @for (l of layerItems; track l.key) {
-              <button (click)="ui.toggleLayer(l.key)"
-                      class="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left transition hover:bg-black/5"
-                      [style.opacity]="ui.layers()[l.key] ? '1' : '.45'">
-                <span class="text-base leading-none">{{ l.icon }}</span>
-                <span class="hidden sm:block flex-1 text-[13px] font-semibold" style="color: var(--txt)">{{ l.label }}</span>
-                <span class="relative inline-block h-4 w-7 shrink-0 rounded-full transition-colors"
-                      [style.background]="ui.layers()[l.key] ? 'var(--c-info)' : 'var(--chip-bg)'">
-                  <span class="absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all"
-                        [style.left]="ui.layers()[l.key] ? '14px' : '2px'"></span>
-                </span>
-              </button>
-            }
-          </div>
-        }
-      </div>
-
-      <!-- ===== Recientes — dos listas apiladas (Desaparecidos / A salvo) ===== -->
+      <!-- ===== Bottom-Center Counters (Desaparecidos / Encontrados / Conectados) ===== -->
       @if (!ui.sheet()) {
-        <aside class="pointer-events-auto absolute left-3 top-1/2 z-[450] hidden max-h-[82vh] w-[244px] -translate-y-1/2 flex-col overflow-hidden rounded-2xl glass-bar sm:flex gs-recent">
+        <div class="pointer-events-none absolute inset-x-0 bottom-8 z-[450] flex justify-center flex-wrap gap-2 px-4 max-w-full">
+          <!-- TOTAL -->
+          <div class="pointer-events-auto flex items-center gap-1.5 rounded-[100px] bg-slate-200/90 dark:bg-[#2a2a2a]/95 backdrop-blur-md px-3 py-1.5 shadow-md border border-slate-300 dark:border-white/5 transition hover:shadow-lg">
+            <span class="h-1.5 w-1.5 rounded-full bg-slate-500"></span>
+            <span class="text-[13px] font-black text-slate-700 dark:text-gray-100">{{ data.metrics().total_reportados }}</span>
+            <span class="text-[9px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">TOTAL</span>
+          </div>
 
           <!-- Desaparecidos -->
-          <div class="recent-head">
-            <span class="relative flex h-2 w-2">
-              <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style="background: var(--c-alert)"></span>
-              <span class="relative inline-flex h-2 w-2 rounded-full" style="background: var(--c-alert)"></span>
-            </span>
-            <span class="title">Desaparecidos</span>
-            <span class="count">{{ missingPeople().length }}</span>
+          <div class="pointer-events-auto flex items-center gap-1.5 rounded-[100px] bg-red-100/90 dark:bg-red-900/30 backdrop-blur-md px-3 py-1.5 shadow-md border border-red-200 dark:border-red-900/50 transition hover:shadow-lg cursor-pointer" (click)="ui.openReport('desaparecido')">
+            <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+            <span class="text-[13px] font-black text-red-700 dark:text-red-400">{{ data.metrics().desaparecidos }}</span>
+            <span class="text-[9px] font-bold text-red-500 dark:text-red-400 uppercase tracking-wide">DESAP.</span>
           </div>
-          <div class="max-h-[28vh] overflow-y-auto px-2 pb-2">
-            @for (person of missingPeople(); track person.id) {
-              <div class="recent-item" (click)="focusPerson(person)">
-                <span class="h-2 w-2 flex-none rounded-full" [style.background]="dotColor(person)"></span>
-                <div class="min-w-0 flex-1">
-                  <div class="name truncate">{{ person.nombre }}</div>
-                  <div class="meta truncate">{{ person.ubicacion }} · {{ ago(person.created_at) }}</div>
-                </div>
-              </div>
-            } @empty {
-              <div class="px-3 py-5 text-center text-[11px]" style="color: var(--txt-muted)">Sin desaparecidos</div>
-            }
+          
+          <!-- Encontrados -->
+          <div class="pointer-events-auto flex items-center gap-1.5 rounded-[100px] bg-green-100/90 dark:bg-green-900/30 backdrop-blur-md px-3 py-1.5 shadow-md border border-green-200 dark:border-green-900/50 transition hover:shadow-lg cursor-pointer" (click)="ui.openReport('encontrado')">
+            <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+            <span class="text-[13px] font-black text-green-700 dark:text-green-400">{{ data.metrics().localizados }}</span>
+            <span class="text-[9px] font-bold text-green-500 dark:text-green-400 uppercase tracking-wide">ENCONTRADOS</span>
           </div>
 
-          <!-- Divisor -->
-          <div class="mx-3 border-t" style="border-color: var(--divider)"></div>
-
-          <!-- A salvo -->
-          <div class="recent-head">
-            <span class="h-2 w-2 rounded-full" style="background: var(--c-safe)"></span>
-            <span class="title">Encontrados</span>
-            <span class="count">{{ safePeople().length }}</span>
-          </div>
-          <div class="max-h-[28vh] overflow-y-auto px-2 pb-2">
-            @for (person of safePeople(); track person.id) {
-              <div class="recent-item" (click)="focusPerson(person)">
-                <span class="h-2 w-2 flex-none rounded-full" [style.background]="dotColor(person)"></span>
-                <div class="min-w-0 flex-1">
-                  <div class="name truncate">{{ person.nombre }}</div>
-                  <div class="meta truncate">{{ person.ubicacion }} · {{ ago(person.created_at) }}</div>
-                </div>
-              </div>
-            } @empty {
-              <div class="px-3 py-5 text-center text-[11px]" style="color: var(--txt-muted)">Sin reportes de encontrados</div>
-            }
+          <!-- Acopio -->
+          <div class="pointer-events-auto flex items-center gap-1.5 rounded-[100px] bg-blue-100/90 dark:bg-blue-900/30 backdrop-blur-md px-3 py-1.5 shadow-md border border-blue-200 dark:border-blue-900/50 transition hover:shadow-lg">
+            <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+            <span class="text-[13px] font-black text-blue-700 dark:text-blue-400">{{ data.metrics().centros_activos }}</span>
+            <span class="text-[9px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wide">ACOPIO</span>
           </div>
 
-          <!-- Conectados (usuarios en línea ahora) -->
-          <div class="mx-3 border-t" style="border-color: var(--divider)"></div>
-          <div class="flex items-center gap-2 px-3 py-2.5">
-            <span class="relative flex h-2 w-2">
-              <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style="background: var(--c-safe)"></span>
-              <span class="relative inline-flex h-2 w-2 rounded-full" style="background: var(--c-safe)"></span>
-            </span>
-            <span class="text-[12px] font-extrabold" style="color: var(--txt)">{{ presence.online() }}</span>
-            <span class="text-[11px] font-semibold" style="color: var(--txt-muted)">en línea</span>
-            <span class="ml-auto flex items-center gap-1 text-[11px] font-semibold" style="color: var(--txt-muted)">
-              👁 <b class="font-extrabold" style="color: var(--txt)">{{ data.visitas() }}</b> visitas
-            </span>
+          <!-- Conectados / Visitas -->
+          <div class="pointer-events-auto hidden md:flex items-center gap-3 rounded-[100px] bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md px-3 py-1 shadow-md border border-black/5 dark:border-white/5">
+             <div class="flex items-center gap-1.5">
+                <span class="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Visitas</span>
+                <span class="text-[11px] font-black text-gray-900 dark:text-gray-100">{{ data.visitas() }}</span>
+             </div>
+             <div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+             <div class="flex items-center gap-1.5">
+                <span class="text-[9px] font-bold text-green-500 uppercase tracking-wide">Online</span>
+                <span class="text-[11px] font-black text-gray-900 dark:text-gray-100">{{ presence.online() }}</span>
+             </div>
           </div>
-
-        </aside>
-      }
-
-      <!-- ===== Línea de tiempo de sismos (barra arrastrable, siempre visible) ===== -->
-      @if (!ui.sheet()) {
-        <div class="pointer-events-none absolute inset-x-0 bottom-[5.75rem] z-[560] flex justify-center px-3">
-          <app-timeline-bar />
         </div>
       }
 
-      <!-- ===== Themed Glass Bottom Navigation ===== -->
-      <nav class="absolute inset-x-0 bottom-0 z-[600] flex justify-center px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pointer-events-none gs-nav">
-        <div class="nav-scroll pointer-events-auto flex w-full max-w-[460px] sm:max-w-[760px] items-center justify-evenly sm:justify-center gap-1 overflow-x-auto rounded-[2rem] glass-bar px-2 py-1.5 animate-stagger-3">
 
-          <!-- Item 1: Buscar -->
-          <button (click)="ui.open('search')" class="nav-btn" [class.is-active]="ui.sheet() === 'search'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span class="lbl">Buscar</span>
-          </button>
-
-          <!-- Item 2: Reportar (Desaparecido) — red accent -->
-          <button (click)="ui.openReport('desaparecido')" class="nav-btn nav-btn--report" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'desaparecido'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            <span class="lbl">Reportar</span>
-          </button>
-
-          <!-- Item 2.5: Encontrados -->
-          <button (click)="ui.openReport('encontrado')" class="nav-btn" [class.is-active]="ui.sheet() === 'report' && ui.initialReportStatus() === 'encontrado'" style="color: var(--c-safe)">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span class="lbl">Encontrados</span>
-          </button>
-
-          <!-- Extra options for Desktop only -->
-          <button (click)="ui.open('ocr')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'ocr'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" /></svg>
-            <span class="lbl">Cargar</span>
-          </button>
-          <button (click)="ui.open('centers')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'centers'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-            <span class="lbl">Acopio</span>
-          </button>
-          <button (click)="ui.open('refugios')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'refugios'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-7 9 7M5 10v10h14V10" /></svg>
-            <span class="lbl">Refugios</span>
-          </button>
-          <button (click)="ui.open('hospitales')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'hospitales'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16" /></svg>
-            <span class="lbl">Hospitales</span>
-          </button>
-          <button (click)="ui.open('edificios')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'edificios'" style="color: var(--c-warn)">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
-            <span class="lbl">Edificios</span>
-          </button>
-          <button (click)="ui.open('sismos')" class="nav-btn hidden sm:flex" [class.is-active]="ui.sheet() === 'sismos'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12h3l2-6 4 14 3-9 2 4h4" /></svg>
-            <span class="lbl">Sismos</span>
-          </button>
-
-          <!-- Item 4: Hamburger Menu (Más Opciones) solo en móvil -->
-          <button (click)="ui.open('menu')" class="nav-btn flex sm:hidden" [class.is-active]="ui.sheet() === 'menu'">
-            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span class="lbl">Más</span>
-          </button>
-
-        </div>
-      </nav>
-      }
 
       <!-- ===== Half-screen sheet host ===== -->
+      }
       @switch (ui.sheet()) {
         @case ('search')  { <app-search-sheet /> }
         @case ('report')  { <app-report-sheet /> }
@@ -454,8 +347,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   conn = inject(ConnectionService);
   presence = inject(PresenceService);
 
-  showSplash = signal(true);
-  fadeSplash = signal(false);
+
 
   /** Panel de capas del mapa: visible u oculto (se alterna desde la cabecera). */
   showLayers = signal(false);
@@ -558,15 +450,23 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.presence.start();   // contador de usuarios conectados (latido cada 15s)
     void this.data.trackVisita();   // contador de visitas acumuladas
 
-    // 3 second splash screen (2s visible + 1s fade)
+    // GSAP Loader transition (del index.html)
     setTimeout(() => {
-      this.fadeSplash.set(true); // Start fade out
-      setTimeout(() => {
-        this.showSplash.set(false); // Remove from DOM after transition
-
-        // Tras el splash, mostrar SIEMPRE el modal de bienvenida (en cada recarga).
+      const loader = document.getElementById('loader');
+      if (loader) {
+        // @ts-ignore
+        gsap.to(loader, {
+          opacity: 0,
+          duration: 0.8,
+          ease: "power2.inOut",
+          onComplete: () => {
+            loader.remove();
+            this.showIntro.set(true); // Tras el splash, mostrar modal de bienvenida
+          }
+        });
+      } else {
         this.showIntro.set(true);
-      }, 1000); // 1s transition duration
+      }
     }, 2000); // Wait 2s before fading
   }
 

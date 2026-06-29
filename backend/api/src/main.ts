@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { setDefaultAutoSelectFamily } from 'net';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { PgExceptionFilter } from './common/pg-exception.filter';
 
@@ -14,6 +15,28 @@ async function bootstrap() {
 
   // Todas las rutas cuelgan de /api
   app.setGlobalPrefix('api');
+
+  // Configuración de Swagger
+  const config = new DocumentBuilder()
+    .setTitle('OmniRed API')
+    .setDescription('Documentación de la API de OmniRed para la gestión de crisis y respuesta a desastres')
+    .setVersion('1.0.0')
+    .addTag('Auth', 'Autenticación de administradores')
+    .addTag('Centros de Acopio', 'Gestión de centros de acopio, refugios y hospitales')
+    .addTag('Edificios Afectados', 'Registro y consulta de edificios colapsados o dañados')
+    .addTag('Personas', 'Reportes de personas desaparecidas, encontradas o fallecidas')
+    .addTag('Sismos', 'Registro y sincronización de eventos sísmicos')
+    .addTag('Metricas', 'Estadísticas del panel de control')
+    .addTag('Visitas', 'Contador de visitas públicas')
+    .addTag('Presence', 'Registro de usuarios activos en línea')
+    .addTag('Listas', 'Gestión de listas/censos de personas')
+    .addTag('Health', 'Estado de salud del servicio y base de datos')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    useGlobalPrefix: true,
+  });
 
   // Validación + saneo de los DTO de entrada
   app.useGlobalPipes(

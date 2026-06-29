@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -12,6 +13,10 @@ import { CreatePersonaDto } from './create-persona.dto';
  * pasa por la RPC `reportar_persona` (con desduplicación) en una transacción.
  */
 export class BatchPersonasDto {
+  @ApiProperty({
+    description: 'Listado de personas a crear en masa',
+    type: [CreatePersonaDto],
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(2000)

@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsIn,
@@ -20,12 +21,25 @@ export type CentroTipo = (typeof CENTRO_TIPOS)[number];
  * (GET /api/personas?page=&size=&q=&estado=&ubicacion=&centroId=&tipo=&all=).
  */
 export class QueryPersonasDto {
+  @ApiPropertyOptional({
+    description: 'Número de página',
+    default: 1,
+    minimum: 1,
+    example: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
+  @ApiPropertyOptional({
+    description: 'Tamaño de página',
+    default: 20,
+    minimum: 1,
+    maximum: 100,
+    example: 20,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -33,38 +47,57 @@ export class QueryPersonasDto {
   @Max(100)
   size?: number = 20;
 
-  /** Búsqueda por nombre o cédula (substring, case-insensitive). */
+  @ApiPropertyOptional({
+    description: 'Búsqueda por nombre o cédula (substring, case-insensitive)',
+    example: 'Juan',
+    maxLength: 120,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(120)
   q?: string;
 
-  /** Filtro por estado (desaparecido | encontrado | fallecido | desconocido). */
+  @ApiPropertyOptional({
+    description: 'Filtro por estado de la persona',
+    enum: ESTADOS,
+    example: 'desaparecido',
+  })
   @IsOptional()
   @IsIn(ESTADOS)
   estado?: Estado;
 
-  /** Filtro por ubicación (substring). */
+  @ApiPropertyOptional({
+    description: 'Filtro por ubicación (substring)',
+    example: 'Catia',
+    maxLength: 160,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(160)
   ubicacion?: string;
 
-  /** Filtro por un sitio concreto (hospital/refugio). */
+  @ApiPropertyOptional({
+    description: 'Filtro por ID de un centro de acopio específico (UUID)',
+    example: 'd3b07384-d113-49cd-a5d6-8ee3c2f54bf9',
+  })
   @IsOptional()
   @IsUUID()
   centroId?: string;
 
-  /** Filtro por categoría de sitio: solo personas en hospitales o en refugios. */
+  @ApiPropertyOptional({
+    description: 'Filtro por tipo de centro (hospital | refugio)',
+    enum: CENTRO_TIPOS,
+    example: 'hospital',
+  })
   @IsOptional()
   @IsIn(CENTRO_TIPOS)
   tipo?: CentroTipo;
 
-  /**
-   * Si es true, ignora la paginación y devuelve todas las filas (lo usa el
-   * mapa / métricas, que necesitan el conjunto completo). Tope de seguridad
-   * aplicado en el servicio.
-   */
+  @ApiPropertyOptional({
+    description: 'Si es true, desactiva la paginación y retorna todos los registros',
+    default: false,
+    example: false,
+  })
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true' || value === '1')
   all?: boolean = false;

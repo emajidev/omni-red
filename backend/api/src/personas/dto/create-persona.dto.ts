@@ -133,4 +133,11 @@ export class CreatePersonaDto {
   @IsString()
   @MaxLength(120)
   reportado_por?: string;
+
+  @ApiPropertyOptional({
+    description: 'Foto de la persona en base64 o URL',
+  })
+  @IsOptional()
+  @IsString()
+  foto_url?: string | null;
 }

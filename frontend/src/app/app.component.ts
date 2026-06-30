@@ -16,6 +16,8 @@ import { BuildingsSheetComponent } from './features/buildings/buildings-sheet.co
 import { ReportBuildingSheetComponent } from './features/report-building/report-building-sheet.component';
 import { CountUpDirective } from './shared/count-up.directive';
 import { BottomSheetComponent } from './shared/bottom-sheet/bottom-sheet.component';
+import { PersonDetailSheetComponent } from './features/search/person-detail-sheet.component';
+import { EmergencyPhonesSheetComponent } from './features/emergency/emergency-phones-sheet.component';
 
 import { CrisisDataService } from './core/services/crisis-data.service';
 import { MapLayer, UiService } from './core/services/ui.service';
@@ -35,7 +37,7 @@ declare var gsap: any;
     SearchSheetComponent, ReportSheetComponent, OcrSheetComponent, CentersSheetComponent,
     SismosSheetComponent, FacilitiesSheetComponent, BuildingsSheetComponent,
     ReportBuildingSheetComponent, BottomSheetComponent, TimelineBarComponent,
-    LiteHomeComponent
+    LiteHomeComponent, PersonDetailSheetComponent, EmergencyPhonesSheetComponent
   ],
   template: `
     <!-- El splash screen ha sido movido a index.html para un inicio más limpio. -->
@@ -182,6 +184,11 @@ declare var gsap: any;
              <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01" /></svg>
            </button>
 
+           <!-- Teléfonos de Emergencia -->
+           <button (click)="ui.open('emergency-phones')" title="Teléfonos de Emergencia" class="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: #ef4444">
+             <svg class="h-[20px] w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+           </button>
+
            <!-- Theme -->
            <button (click)="ui.toggleTheme()" title="Cambiar Tema" class="grid h-10 w-10 sm:h-12 sm:w-12 place-items-center rounded-[100px] shadow-lg bg-white/95 dark:bg-[#2a2a2a]/95 backdrop-blur-md transition hover:bg-black/5 active:scale-90 border border-black/5 dark:border-white/5" style="color: var(--txt)">
               @if (ui.theme() === 'dark') {
@@ -258,6 +265,8 @@ declare var gsap: any;
         @case ('hospitales') { <app-facilities-sheet tipo="hospital" /> }
         @case ('edificios')  { <app-buildings-sheet /> }
         @case ('report-building') { <app-report-building-sheet /> }
+        @case ('person-detail')   { <app-person-detail-sheet /> }
+        @case ('emergency-phones') { <app-emergency-phones-sheet /> }
         @case ('menu') {
           <app-bottom-sheet (close)="ui.close()">
             <div class="px-5 py-6">

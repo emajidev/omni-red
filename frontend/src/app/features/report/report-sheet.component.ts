@@ -177,6 +177,14 @@ export class ReportSheetComponent implements OnInit {
 
   ngOnInit(): void {
     this.status.set(this.ui.initialReportStatus());
+    const prefill = this.ui.reportPrefill();
+    if (prefill) {
+      this.form.patchValue({
+        nombre: prefill.nombre || '',
+        cedula: prefill.cedula || '',
+        edad: prefill.edad ?? null
+      });
+    }
   }
 
   setStatus(s: PersonStatus): void {

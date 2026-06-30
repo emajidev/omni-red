@@ -136,12 +136,16 @@ import { SOURCE_LABEL, STATUS_CHIP, STATUS_LABEL, timeAgo } from '../../core/uti
                 <button (click)="focusExternal(p)"
                         class="flex w-full items-start gap-3 rounded-xl bg-white p-4 text-left shadow-sm
                                ring-1 ring-borderlight hover:bg-appbg active:scale-[.99] transition fade-in">
-                  <span class="mt-1 h-3 w-3 shrink-0 rounded-full bg-info shadow-sm"></span>
+                  <span class="mt-1 h-3 w-3 shrink-0 rounded-full shadow-sm"
+                        [style.background]="p.estado === 'encontrado' ? '#38A169' : '#E53E3E'"></span>
                   <span class="min-w-0 flex-1">
-                    <span class="flex items-center gap-2">
+                    <div class="flex items-center justify-between gap-2">
                       <span class="truncate text-sm font-bold text-textmain">{{ p.nombre }}</span>
-                      <span class="shrink-0 rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold text-info ring-1 ring-info/30">{{ p.fuente }}</span>
-                    </span>
+                      <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="chip(p.estado)">{{ label(p.estado) }}</span>
+                        <span class="rounded-full bg-info/15 px-2 py-0.5 text-[10px] font-bold text-info ring-1 ring-info/30">{{ p.fuente }}</span>
+                      </div>
+                    </div>
                     <span class="mt-1 block truncate text-[13px] text-textmuted">{{ p.cedula ?? 'Sin cédula' }}{{ p.edad ? ' · ' + p.edad + ' años' : '' }} · {{ p.ubicacion }}</span>
                     @if (p.telefono_contacto) {
                       <span class="mt-1 block text-[12px] font-semibold text-info">📞 {{ p.telefono_contacto }}</span>
@@ -197,8 +201,44 @@ export class SearchSheetComponent {
     };
   });
 
-  /** fvivemas: el backend ya devolvió las coincidencias del término actual. */
-  readonly externalResults = computed<ExternalPerson[]>(() => this.data.external());
+  readonly externalResults = computed<ExternalPerson[]>(() => {
+    const ext = this.data.external();
+    const local = this.data.people();
+
+    const norm = (s: string) =>
+      (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    // Create a set of found cédulas and names
+    const foundCedulas = new Set<string>();
+    const foundNames = new Set<string>();
+
+    for (const p of local) {
+      if (p.estado === 'encontrado') {
+        if (p.cedula) {
+          const c = p.cedula.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          foundCedulas.add(c);
+        }
+        foundNames.add(norm(p.nombre));
+      }
+    }
+
+    return ext.map(p => {
+      let isFound = false;
+      if (p.cedula) {
+        const c = p.cedula.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        if (foundCedulas.has(c)) isFound = true;
+      }
+      if (foundNames.has(norm(p.nombre))) {
+        isFound = true;
+      }
+
+      // If we match a local "encontrado" report, override the status
+      return {
+        ...p,
+        estado: isFound ? ('encontrado' as const) : ('desaparecido' as const)
+      };
+    });
+  });
 
   readonly estadoChips = [
     { val: 'todos', label: 'Todos', bg: '#64748b' },
@@ -255,15 +295,13 @@ export class SearchSheetComponent {
     }
   }
 
-  focus(p: { id: string; lat: number; lng: number }): void {
-    this.ui.focusOn({ lat: p.lat, lng: p.lng, id: p.id, zoom: 15 });
+  focus(p: any): void {
+    this.ui.openPersonDetail(p);
   }
 
   /** Centra el mapa en el hospital del registro externo (no hay marcador). */
   focusExternal(p: ExternalPerson): void {
-    if (p.lat != null && p.lng != null) {
-      this.ui.focusOn({ lat: p.lat, lng: p.lng, id: p.id, zoom: 15 });
-    }
+    this.ui.openPersonDetail(p);
   }
 
   chip = (s: any) => STATUS_CHIP[s as keyof typeof STATUS_CHIP];

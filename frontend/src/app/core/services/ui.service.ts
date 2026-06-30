@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { CenterType, PersonStatus } from '../models/models';
 
 /** Which half-screen bottom sheet is open. */
-export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | 'edificios' | 'report-building' | 'menu' | null;
+export type Sheet = 'search' | 'report' | 'ocr' | 'centers' | 'sismos' | 'refugios' | 'hospitales' | 'edificios' | 'report-building' | 'menu' | 'person-detail' | 'emergency-phones' | null;
 
 /** Visual theme. Persisted in localStorage + reflected on <html>. */
 export type Theme = 'light' | 'dark';
@@ -36,6 +36,12 @@ export class UiService {
 
   /** Search box text (real-time filter). */
   readonly query = signal<string>('');
+
+  /** Selected person for details modal/sheet. */
+  readonly selectedPerson = signal<any | null>(null);
+
+  /** Prefill data for reporting an external person as located. */
+  readonly reportPrefill = signal<{ nombre: string; cedula?: string | null; edad?: number | null } | null>(null);
 
   /** Status preselected when opening the report form. */
   readonly initialReportStatus = signal<PersonStatus>('desaparecido');
@@ -143,8 +149,20 @@ export class UiService {
   }
 
   openReport(status: PersonStatus): void {
+    this.reportPrefill.set(null);
     this.initialReportStatus.set(status);
     this.sheet.set('report');
+  }
+
+  openReportWithPrefill(status: PersonStatus, data: { nombre: string; cedula?: string | null; edad?: number | null }): void {
+    this.reportPrefill.set(data);
+    this.initialReportStatus.set(status);
+    this.sheet.set('report');
+  }
+
+  openPersonDetail(person: any): void {
+    this.selectedPerson.set(person);
+    this.sheet.set('person-detail');
   }
 
   /**

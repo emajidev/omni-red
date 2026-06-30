@@ -101,7 +101,33 @@ from (values
   ('Hospital Militar Dr. Carlos Arvelo','San Martín, Libertador',            10.4806, -66.9300, 'hospital'),
   ('Hospital Vargas de Caracas',        'San José, Libertador',              10.5089, -66.9061, 'hospital'),
   ('Hospital Ana Francisca Pérez de León','Petare, Sucre',                   10.4783, -66.8047, 'hospital'),
-  ('Hospital José Gregorio Hernández',  'Los Magallanes de Catia, Libertador',10.5167,-66.9300, 'hospital')
+  ('Hospital José Gregorio Hernández',  'Los Magallanes de Catia, Libertador',10.5167,-66.9300, 'hospital'),
+  -- Centros de Acopio - Estado Miranda
+  ('Acopio MP Paz Castillo', 'Calle La Línea, sector Jabillo (al lado de San Benito), Paz Castillo', 10.3067, -66.6972, 'acopio'),
+  ('Acopio MP Carrizal', 'Complejo Eduardo Pardo, Carrizal', 10.3486, -66.9758, 'acopio'),
+  ('Acopio MP Los Salias', 'El Fusmi, Carretera Vieja Caracas - Los Teques, Los Salias', 10.3725, -66.9639, 'acopio'),
+  ('Acopio MP Urdaneta - Alcaldía', 'Alcaldía, Protección Civil, Urdaneta', 10.1583, -66.8833, 'acopio'),
+  ('Acopio MP Urdaneta - Iglesia', 'Iglesia de Quebrada de Cúa, Urdaneta', 10.1600, -66.8800, 'acopio'),
+  ('Acopio MP Urdaneta - Base Misiones', 'Base de Misiones Petraquica, Cúa, Urdaneta', 10.1500, -66.8900, 'acopio'),
+  ('Acopio MP Tomas Lander', 'Alcaldía del Municipio, Tomas Lander', 10.1147, -66.7761, 'acopio'),
+  ('Acopio MP Brión', 'Casa de la Cultura de Higuerote, Brión', 10.4792, -66.1039, 'acopio'),
+  ('Acopio MP Paez', 'Alcaldía del Municipio, Paez', 10.2989, -65.9819, 'acopio'),
+  ('Acopio MP Andrés Bello', 'Casa de la Cultura, Andrés Bello', 10.2939, -66.0847, 'acopio'),
+  ('Acopio MP Pedro Gual', 'Ateneo de Cúpira, Pedro Gual', 10.1603, -65.6961, 'acopio'),
+  ('Acopio MP Buroz', 'Casa del PSUV, Buroz', 10.3800, -66.1200, 'acopio'),
+  ('Acopio MP Simon Bolívar', 'Proveeduría de Yare, Simon Bolívar', 10.1775, -66.7456, 'acopio'),
+  ('Acopio MP Independencia - Protección Civil', 'Sede de Protección Civil, Independencia', 10.2333, -66.6667, 'acopio'),
+  ('Acopio MP Independencia - Casa Cultura', 'Casa de la Cultura Juan España, Santa Teresa, Independencia', 10.2300, -66.6600, 'acopio'),
+  ('Acopio MP Independencia - Madre María', 'U.E.P Madre María, Santa Teresa, Independencia', 10.2280, -66.6580, 'acopio'),
+  ('Acopio MP Independencia - Vicente Emilio', 'U.E.N Vicente Emilio Sojo, Cartanal, Independencia', 10.2400, -66.6800, 'acopio'),
+  ('Acopio MP Cristóbal Rojas', 'Casa del Partido PSUV, Cristóbal Rojas', 10.2440, -66.8570, 'acopio'),
+  ('Acopio MP Sucre - C.C Milenium', 'C.C Milenium, Sucre', 10.4810, -66.8150, 'acopio'),
+  ('Acopio MP Sucre - Parque Miranda', 'Parque Generalísimo Francisco de Miranda, Sucre', 10.4969, -66.8389, 'acopio'),
+  ('Acopio MP Sucre - Plaza Bolívar', 'Plaza Bolívar, Sucre', 10.4783, -66.8047, 'acopio'),
+  ('Acopio MP Zamora - Bomberos', 'Bomberos Municipales de Zamora, Zamora', 10.4760, -66.5400, 'acopio'),
+  ('Acopio MP Zamora - Casa PSUV', 'Casa del PSUV, Zamora', 10.4700, -66.5300, 'acopio'),
+  ('Acopio MP Guaicaipuro - Complejo Deportivo', 'Complejo Deportivo Frank Gil, Los Teques, Guaicaipuro', 10.3440, -67.0410, 'acopio'),
+  ('Acopio MP Acevedo', 'Salón Che Guevara, Caucagua, Acevedo', 10.2764, -66.3806, 'acopio')
 ) as v(nombre, ubicacion, lat, lng, tipo)
 where not exists (
   select 1 from public.centros_acopio c where c.nombre = v.nombre

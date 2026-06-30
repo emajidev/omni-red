@@ -89,6 +89,7 @@ export interface ExternalPerson {
   nombre: string;           // name + lastName
   cedula: string | null;    // idCard ('' → null)
   edad?: number | null;     // age
+  estado?: PersonStatus;    // status override
   ubicacion: string;        // hospitalName / lugar
   lat: number | null;       // coordinates.lat
   lng: number | null;       // coordinates.lng
